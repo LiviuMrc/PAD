@@ -1,0 +1,10 @@
+<message>
+  <messageId>33333333-4444-4555-8666-777777777777</messageId>
+  <correlationId>33333333-4444-4555-8666-777777777777</correlationId>
+  <messageType>PUBLISH</messageType>
+  <schemaVersion>1.0</schemaVersion>
+  <occurredAt>2026-10-17T13:00:00+03:00</occurredAt>
+  <sender>sender-1</sender>
+  <topic>news</topic>
+  <payload>data nu e în UTC</payload>
+</message>

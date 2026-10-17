@@ -1,0 +1,9 @@
+<message>
+  <messageId>7a1e2d3c-4b5a-4f6e-8d7c-9b0a1f2e3d4c</messageId>
+  <correlationId>7a1e2d3c-4b5a-4f6e-8d7c-9b0a1f2e3d4c</correlationId>
+  <messageType>SUBSCRIBE</messageType>
+  <schemaVersion>1.0</schemaVersion>
+  <occurredAt>2026-10-17T10:00:00Z</occurredAt>
+  <sender>receiver-1</sender>
+  <topic>news</topic>
+</message>

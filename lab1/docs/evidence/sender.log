@@ -1,0 +1,22 @@
+### 1. publicare cu ambele receivere online
+{"time":"2026-10-17T15:20:08.214154419Z","level":"INFO","msg":"ACK primit","component":"sender","event":"reply","result":"ack","correlationId":"0d0866e3-57b1-4dcf-94d7-634533732edf","ackFor":"902160af-2dfb-4834-867b-22662f376e42"}
+{"time":"2026-10-17T15:20:08.214194367Z","level":"INFO","msg":"publicare terminată","component":"sender","event":"publish","result":"ack","correlationId":"0d0866e3-57b1-4dcf-94d7-634533732edf","messageId":"902160af-2dfb-4834-867b-22662f376e42","topic":"news","duration_ms":0}
+### 2. injectarea eșecului: receiver-2 este oprit
+### 3. publicare cât timp receiver-2 e offline
+{"time":"2026-10-17T15:20:08.521842512Z","level":"INFO","msg":"ACK primit","component":"sender","event":"reply","result":"ack","correlationId":"a1592f14-7d0c-424e-b44b-c2ac0dbe20f6","ackFor":"f5480b71-3cbf-4fd3-a2ae-bd7a0ddb4791"}
+{"time":"2026-10-17T15:20:08.521906245Z","level":"INFO","msg":"publicare terminată","component":"sender","event":"publish","result":"ack","correlationId":"a1592f14-7d0c-424e-b44b-c2ac0dbe20f6","messageId":"f5480b71-3cbf-4fd3-a2ae-bd7a0ddb4791","topic":"news","duration_ms":0}
+{"time":"2026-10-17T15:20:08.525513603Z","level":"INFO","msg":"ACK primit","component":"sender","event":"reply","result":"ack","correlationId":"628c367e-0726-42cf-8050-f874e038857d","ackFor":"2bdb07cb-ce0a-40a7-ad7b-161eb5e6535a"}
+{"time":"2026-10-17T15:20:08.525540286Z","level":"INFO","msg":"publicare terminată","component":"sender","event":"publish","result":"ack","correlationId":"628c367e-0726-42cf-8050-f874e038857d","messageId":"2bdb07cb-ce0a-40a7-ad7b-161eb5e6535a","topic":"alerts","duration_ms":0}
+{"multicast":true,"onlineReceivers":1,"status":"ready","topics":2}
+### 4. recuperarea: receiver-2 repornește cu același id
+### 5. multicast UDP pe topicul broadcast
+{"time":"2026-10-17T15:20:09.038318486Z","level":"INFO","msg":"ACK primit","component":"sender","event":"reply","result":"ack","correlationId":"ea354ea7-6316-4673-9976-10568dcbee63","ackFor":"0ba1758e-37bf-4fb3-bdae-27c189adb7f5"}
+{"time":"2026-10-17T15:20:09.038345396Z","level":"INFO","msg":"publicare terminată","component":"sender","event":"publish","result":"ack","correlationId":"ea354ea7-6316-4673-9976-10568dcbee63","messageId":"0ba1758e-37bf-4fb3-bdae-27c189adb7f5","topic":"broadcast","duration_ms":1}
+### 6. validare: XML invalid respins
+{"time":"2026-10-17T15:20:09.042396156Z","level":"INFO","msg":"XML trimis neschimbat","component":"sender","event":"raw.sent","file":"contracts/examples/invalid-type.xml"}
+{"time":"2026-10-17T15:20:09.042660142Z","level":"WARN","msg":"brokerul a respins mesajul","component":"sender","event":"reply","result":"error","correlationId":"11111111-2222-4333-8444-555555555555","error":"messageType necunoscut: \"DELETE\""}
+### 7. același mesaj în XML și JSON
+XML : <message><messageId>b993f753-6d76-40b7-a551-cb623ae2399b</messageId><correlationId>a737c45b-8a67-4ae5-b8fc-3209d9094eba</correlationId><messageType>PUBLISH</messageType><schemaVersion>1.0</schemaVersion><occurredAt>2026-10-17T15:20:09Z</occurredAt><sender>sender-1</sender><topic>news</topic><payload>json demo</payload></message>
+JSON: {"messageId":"b993f753-6d76-40b7-a551-cb623ae2399b","correlationId":"a737c45b-8a67-4ae5-b8fc-3209d9094eba","messageType":"PUBLISH","schemaVersion":"1.0","occurredAt":"2026-10-17T15:20:09Z","sender":"sender-1","topic":"news","payload":"json demo"}
+{"time":"2026-10-17T15:20:09.045848736Z","level":"INFO","msg":"ACK primit","component":"sender","event":"reply","result":"ack","correlationId":"a737c45b-8a67-4ae5-b8fc-3209d9094eba","ackFor":"b993f753-6d76-40b7-a551-cb623ae2399b"}
+{"time":"2026-10-17T15:20:09.04586869Z","level":"INFO","msg":"publicare terminată","component":"sender","event":"publish","result":"ack","correlationId":"a737c45b-8a67-4ae5-b8fc-3209d9094eba","messageId":"b993f753-6d76-40b7-a551-cb623ae2399b","topic":"news","duration_ms":0}

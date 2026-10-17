@@ -1,0 +1,6 @@
+{"time":"2026-10-17T15:20:07.68345053Z","level":"INFO","msg":"în grupul multicast","component":"receiver","receiver":"receiver-2","event":"multicast.join","result":"ok","group":"239.255.255.250:1900"}
+{"time":"2026-10-17T15:20:07.683505405Z","level":"INFO","msg":"conectat la broker","component":"receiver","receiver":"receiver-2","event":"connect","result":"ok","addr":"127.0.0.1:7000"}
+{"time":"2026-10-17T15:20:07.683821999Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-2","event":"subscribe","result":"ack","topic":"news","correlationId":"1897f0ac-432e-48cc-b706-9c71e0b6a204"}
+{"time":"2026-10-17T15:20:07.683892778Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-2","event":"subscribe","result":"ack","topic":"alerts","correlationId":"e81227b0-76aa-4cbc-ad2d-2e5fa0818dae"}
+>>> [tcp] news de la sender-1: mesaj 1 (ambii online)
+{"time":"2026-10-17T15:20:08.214010613Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","via":"tcp","correlationId":"0d0866e3-57b1-4dcf-94d7-634533732edf","messageId":"902160af-2dfb-4834-867b-22662f376e42","topic":"news"}

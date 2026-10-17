@@ -1,0 +1,10 @@
+<message>
+  <messageId>11111111-2222-4333-8444-555555555555</messageId>
+  <correlationId>11111111-2222-4333-8444-555555555555</correlationId>
+  <messageType>DELETE</messageType>
+  <schemaVersion>1.0</schemaVersion>
+  <occurredAt>2026-10-17T10:00:00Z</occurredAt>
+  <sender>sender-1</sender>
+  <topic>news</topic>
+  <payload>tip de mesaj necunoscut</payload>
+</message>

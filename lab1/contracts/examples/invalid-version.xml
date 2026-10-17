@@ -1,0 +1,10 @@
+<message>
+  <messageId>44444444-5555-4666-8777-888888888888</messageId>
+  <correlationId>44444444-5555-4666-8777-888888888888</correlationId>
+  <messageType>PUBLISH</messageType>
+  <schemaVersion>2.0</schemaVersion>
+  <occurredAt>2026-10-17T10:00:00Z</occurredAt>
+  <sender>sender-1</sender>
+  <topic>news</topic>
+  <payload>versiune de schemă nesuportată</payload>
+</message>

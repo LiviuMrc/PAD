@@ -1,0 +1,11 @@
+{"time":"2026-10-17T15:20:07.683361101Z","level":"INFO","msg":"în grupul multicast","component":"receiver","receiver":"receiver-1","event":"multicast.join","result":"ok","group":"239.255.255.250:1900"}
+{"time":"2026-10-17T15:20:07.683877216Z","level":"INFO","msg":"conectat la broker","component":"receiver","receiver":"receiver-1","event":"connect","result":"ok","addr":"127.0.0.1:7000"}
+{"time":"2026-10-17T15:20:07.684157646Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-1","event":"subscribe","result":"ack","topic":"news","correlationId":"9c383a34-74f1-440d-a72a-b85264748515"}
+>>> [tcp] news de la sender-1: mesaj 1 (ambii online)
+{"time":"2026-10-17T15:20:08.214058843Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-1","event":"receive","result":"ok","via":"tcp","correlationId":"0d0866e3-57b1-4dcf-94d7-634533732edf","messageId":"902160af-2dfb-4834-867b-22662f376e42","topic":"news"}
+>>> [tcp] news de la sender-1: mesaj 2 (receiver-2 offline)
+{"time":"2026-10-17T15:20:08.521788566Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-1","event":"receive","result":"ok","via":"tcp","correlationId":"a1592f14-7d0c-424e-b44b-c2ac0dbe20f6","messageId":"f5480b71-3cbf-4fd3-a2ae-bd7a0ddb4791","topic":"news"}
+>>> [udp-multicast] broadcast de la sender-1: mesaj 4 (multicast)
+{"time":"2026-10-17T15:20:09.037972863Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-1","event":"receive","result":"ok","via":"udp-multicast","correlationId":"ea354ea7-6316-4673-9976-10568dcbee63","messageId":"0ba1758e-37bf-4fb3-bdae-27c189adb7f5","topic":"broadcast"}
+>>> [tcp] news de la sender-1: json demo
+{"time":"2026-10-17T15:20:09.045798362Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-1","event":"receive","result":"ok","via":"tcp","correlationId":"a737c45b-8a67-4ae5-b8fc-3209d9094eba","messageId":"b993f753-6d76-40b7-a551-cb623ae2399b","topic":"news"}

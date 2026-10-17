@@ -1,0 +1,12 @@
+{"time":"2026-10-17T15:20:08.534853955Z","level":"INFO","msg":"conectat la broker","component":"receiver","receiver":"receiver-2","event":"connect","result":"ok","addr":"127.0.0.1:7000"}
+{"time":"2026-10-17T15:20:08.534831393Z","level":"INFO","msg":"în grupul multicast","component":"receiver","receiver":"receiver-2","event":"multicast.join","result":"ok","group":"239.255.255.250:1900"}
+{"time":"2026-10-17T15:20:08.535148824Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-2","event":"subscribe","result":"ack","topic":"news","correlationId":"ce7e6639-3bd8-43bb-bc39-e8aca19974ca"}
+>>> [tcp] news de la sender-1: mesaj 2 (receiver-2 offline)
+{"time":"2026-10-17T15:20:08.535198849Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","via":"tcp","correlationId":"a1592f14-7d0c-424e-b44b-c2ac0dbe20f6","messageId":"f5480b71-3cbf-4fd3-a2ae-bd7a0ddb4791","topic":"news"}
+>>> [tcp] alerts de la sender-1: mesaj 3 (alerts, receiver-2 offline)
+{"time":"2026-10-17T15:20:08.535226505Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","via":"tcp","correlationId":"628c367e-0726-42cf-8050-f874e038857d","messageId":"2bdb07cb-ce0a-40a7-ad7b-161eb5e6535a","topic":"alerts"}
+{"time":"2026-10-17T15:20:08.535285732Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-2","event":"subscribe","result":"ack","topic":"alerts","correlationId":"868d7400-90ed-42dc-b9e9-0428f18b9cb0"}
+>>> [udp-multicast] broadcast de la sender-1: mesaj 4 (multicast)
+{"time":"2026-10-17T15:20:09.037970198Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","via":"udp-multicast","correlationId":"ea354ea7-6316-4673-9976-10568dcbee63","messageId":"0ba1758e-37bf-4fb3-bdae-27c189adb7f5","topic":"broadcast"}
+>>> [tcp] news de la sender-1: json demo
+{"time":"2026-10-17T15:20:09.045768597Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","via":"tcp","correlationId":"a737c45b-8a67-4ae5-b8fc-3209d9094eba","messageId":"b993f753-6d76-40b7-a551-cb623ae2399b","topic":"news"}

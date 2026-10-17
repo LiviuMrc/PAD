@@ -1,0 +1,6 @@
+# binare și fișiere generate
+/bin/
+*.exe
+*.test
+*.out
+.env
