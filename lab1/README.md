@@ -155,4 +155,9 @@ Detalii: [docs/failure-scenario.md](docs/failure-scenario.md).
 
 ## Versiune
 
-Versiunea evaluată are tag-ul `lab1-v1.0`. Corecturile ulterioare primesc tag-uri noi (`lab1-v1.1`, ...).
+Versiunea curentă: **`lab1-v1.1`**. Tag-urile deja publicate nu se mută, iar corecturile primesc versiuni noi.
+
+| Versiune | Modificări |
+|---|---|
+| `lab1-v1.1` | receiverul resetează contorul de reconectări doar după ACK și se oprește dacă abonarea e respinsă; parserul XML respinge text liber și mai multe rădăcini, ca XSD-ul; `TestHealth` folosește un server HTTP real |
+| `lab1-v1.0` | prima versiune |

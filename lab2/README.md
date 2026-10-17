@@ -138,4 +138,9 @@ un număr nou, iar o schimbare incompatibilă înseamnă pachetul `broker.v2`.
 
 ## Versiune
 
-Versiunea evaluată are tag-ul `lab2-v1.0`.
+Versiunea curentă: **`lab2-v1.1`**. Tag-urile deja publicate nu se mută, iar corecturile primesc versiuni noi.
+
+| Versiune | Modificări |
+|---|---|
+| `lab2-v1.1` | receiverul nu mai raportează abonarea ca reușită când e respinsă, curăță spațiile din `-topics` și resetează contorul doar după o abonare confirmată; gRPC reflection pentru grpcurl |
+| `lab2-v1.0` | prima versiune |
