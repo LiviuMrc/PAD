@@ -36,9 +36,14 @@ func main() {
 
 	attempts := 0
 	for {
-		err := session(*addr, *id, strings.Split(*topics, ","), log)
-		if err == nil {
-			attempts = 0 // sesiunea a mers, deci contorul de reconectări pornește iar de la zero
+		subscribed, err := session(*addr, *id, strings.Split(*topics, ","), log)
+		if errors.Is(err, errRejected) {
+			// cererea e greșită: retry-ul nu ar schimba nimic
+			log.Error("abonare respinsă", "event", "subscribe", "result", "rejected", "error", err.Error())
+			os.Exit(1)
+		}
+		if subscribed {
+			attempts = 0 // brokerul a confirmat abonarea, deci contorul pornește iar de la zero
 		}
 		attempts++
 		if attempts > *maxRetries {
@@ -51,20 +56,22 @@ func main() {
 	}
 }
 
+var errRejected = errors.New("brokerul a respins abonarea")
+
 // session se conectează, se abonează și citește mesaje până se pierde conexiunea.
-// Întoarce eroare doar dacă nu s-a putut conecta.
-func session(addr, id string, topics []string, log *slog.Logger) error {
+// subscribed = true dacă brokerul a confirmat abonarea cu ACK.
+func session(addr, id string, topics []string, log *slog.Logger) (subscribed bool, err error) {
 	t, err := common.DialTCP(addr)
 	if err != nil {
 		log.Warn("brokerul nu răspunde", "event", "connect", "result", "failed", "error", err.Error())
-		return err
+		return false, err
 	}
 	defer t.Close()
 	log.Info("conectat la broker", "event", "connect", "result", "ok", "addr", addr)
 
 	for _, topic := range topics {
 		if err := t.Send(common.NewMessage(common.TypeSubscribe, "", id, strings.TrimSpace(topic), "")); err != nil {
-			return nil
+			return false, err
 		}
 	}
 
@@ -76,7 +83,13 @@ func session(addr, id string, topics []string, log *slog.Logger) error {
 			continue
 		}
 		if err != nil {
-			return nil
+			return subscribed, err
+		}
+		switch {
+		case m.MessageType == common.TypeAck:
+			subscribed = true
+		case m.MessageType == common.TypeError && !subscribed:
+			return false, fmt.Errorf("%w: %s", errRejected, m.Payload)
 		}
 		show(m, "tcp", log)
 	}

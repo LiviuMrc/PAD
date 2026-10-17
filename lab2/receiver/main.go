@@ -41,7 +41,10 @@ func main() {
 	defer conn.Close()
 	client := brokerpb.NewBrokerClient(conn)
 
-	req := &brokerpb.SubscribeRequest{ReceiverId: *id, Topics: strings.Split(*topics, ",")}
+	req := &brokerpb.SubscribeRequest{ReceiverId: *id}
+	for _, t := range strings.Split(*topics, ",") {
+		req.Topics = append(req.Topics, strings.TrimSpace(t))
+	}
 	attempts := 0
 	for {
 		subscribed, err := session(client, req, log)
@@ -80,7 +83,14 @@ func session(client brokerpb.BrokerClient, req *brokerpb.SubscribeRequest, log *
 	if err != nil {
 		return false, err
 	}
-	if _, err := stream.Header(); err != nil { // header-ul = confirmarea abonării
+	// header-ul "subscribed" = confirmarea abonării. Dacă brokerul respinge cererea,
+	// header-ul lipsește, iar eroarea (de ex. INVALID_ARGUMENT) vine la Recv.
+	md, err := stream.Header()
+	if err != nil {
+		return false, err
+	}
+	if len(md.Get("subscribed")) == 0 {
+		_, err := stream.Recv()
 		return false, err
 	}
 	log.Info("abonare confirmată", "event", "subscribe", "result", "ok", "topics", req.Topics,

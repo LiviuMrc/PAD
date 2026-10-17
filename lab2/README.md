@@ -117,7 +117,9 @@ un număr nou, iar o schimbare incompatibilă înseamnă pachetul `broker.v2`.
 - Mesajele invalide sunt respinse cu `INVALID_ARGUMENT` și nu ajung la receivere.
 - Un receiver offline primește la reconectare, în ordine, mesajele din coadă, cât timp
   brokerul nu a fost repornit. Coada are maximum 1000 de mesaje per receiver.
-- Fiecare apel are deadline. Niciun retry nu e infinit.
+- Fiecare apel are deadline. Niciun retry nu e infinit: contorul de reconectări al receiverului
+  se resetează doar după o abonare confirmată, iar la `INVALID_ARGUMENT` sau `CANCELED`
+  receiverul se oprește.
 
 **Limite:**
 - Nu există persistență: la repornirea brokerului se pierd cozile.

@@ -139,8 +139,10 @@ Un `schemaVersion` nou (de ex. 2.0) înseamnă un contract nou, deci un fișier 
 - Un mesaj publicat pe un topic ajunge la toți abonații online.
 - Un receiver offline primește la reconectare, în ordine, mesajele din coadă, cât timp
   brokerul nu a fost repornit. Coada are maximum 1000 de mesaje per receiver.
-- Fără retry infinit: receiverul face maximum `RECONNECT_MAX` reconectări. Senderul așteaptă
-  ACK maximum 3s, iar scrierile TCP au deadline de 2s.
+- Fără retry infinit: receiverul face maximum `RECONNECT_MAX` reconectări. Contorul se resetează
+  doar după un `ACK` de abonare. Dacă abonarea e respinsă cu `ERROR` (de ex. topic invalid),
+  receiverul se oprește fără să reîncerce. Senderul așteaptă ACK maximum 3s, iar scrierile TCP
+  au deadline de 2s.
 
 **Limite (intenționate pentru Lab 1):**
 - Nu există persistență: la repornirea brokerului se pierd cozile.

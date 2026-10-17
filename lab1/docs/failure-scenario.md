@@ -3,6 +3,8 @@
 Reproducere automată: `go test ./broker -run Offline -v`
 (test `TestOfflineReceiverGetsQueuedMessagesOnReconnect`)
 Reproducere cu procese reale: `./scripts/demo.sh`. Log-urile se scriu în `docs/evidence/`.
+Log-urile salvate au fost generate cu `MULTICAST_ADDR=239.255.255.250:1900`, pentru că firewall-ul
+mașinii de test (ufw) bloca portul implicit 9999/udp. Cu `sudo ufw allow 9999/udp` merge și grupul implicit.
 
 ## Starea inițială
 Brokerul rulează. `receiver-1` e abonat la `news`. `receiver-2` e abonat la `news` și `alerts`.

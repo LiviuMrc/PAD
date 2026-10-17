@@ -101,6 +101,7 @@ func ParseXML(data []byte) (*Message, error) {
 	dec := xml.NewDecoder(bytes.NewReader(data))
 	values := map[string]string{}
 	depth, next := 0, 0
+	rootSeen := false
 	current := ""
 	var text strings.Builder
 
@@ -117,6 +118,10 @@ func ParseXML(data []byte) (*Message, error) {
 			depth++
 			switch depth {
 			case 1:
+				if rootSeen {
+					return nil, fmt.Errorf("documentul are mai multe elemente rădăcină")
+				}
+				rootSeen = true
 				if t.Name.Local != "message" {
 					return nil, fmt.Errorf("rădăcina trebuie să fie <message>, nu <%s>", t.Name.Local)
 				}
@@ -140,6 +145,8 @@ func ParseXML(data []byte) (*Message, error) {
 		case xml.CharData:
 			if depth == 2 {
 				text.Write(t)
+			} else if len(bytes.TrimSpace(t)) > 0 {
+				return nil, fmt.Errorf("text nepermis în afara elementelor: %q", bytes.TrimSpace(t))
 			}
 		case xml.EndElement:
 			if depth == 2 {

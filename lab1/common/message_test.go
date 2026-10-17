@@ -81,6 +81,14 @@ func TestParseRejectsBadStructure(t *testing.T) {
 		"imbricat":         `<message><messageId><x/></messageId></message>`,
 		"gol":              ``,
 	}
+	// pornind de la un mesaj valid, modificări pe care XSD-ul le respinge
+	valid, _ := NewMessage(TypePublish, "", "s", "news", "x").ToXML()
+	if _, err := ParseXML(valid); err != nil {
+		t.Fatal(err)
+	}
+	cases["text liber în <message>"] = strings.Replace(string(valid), "<message>", "<message>text", 1)
+	cases["două rădăcini"] = string(valid) + string(valid)
+
 	for name, doc := range cases {
 		if _, err := ParseXML([]byte(doc)); err == nil {
 			t.Errorf("%s: trebuia respins", name)
