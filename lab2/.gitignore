@@ -1,0 +1,7 @@
+# cod generat din contracts/broker.proto (se regenerează cu ./scripts/gen.sh)
+/gen/
+# protoc și plugin-urile descărcate de scripts/gen.sh
+/.tools/
+/bin/
+*.test
+.env

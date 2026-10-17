@@ -1,0 +1,8 @@
+{"time":"2026-10-17T15:50:37.879517967Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-1","event":"subscribe","result":"ok","topics":["news"],"correlationId":"5c590941-efaa-4e0b-8356-8200a8066bfb"}
+>>> [grpc] news de la sender-1: mesaj 1 (ambii online)
+{"time":"2026-10-17T15:50:38.381268804Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-1","event":"receive","result":"ok","correlationId":"6715e71c-e319-4c57-80d0-906fe43858cc","messageId":"99e41d5c-04a9-4b04-8cb0-e5f5357b82ec","topic":"news"}
+>>> [grpc] news de la sender-1: mesaj 2 (receiver-2 offline)
+{"time":"2026-10-17T15:50:38.690243137Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-1","event":"receive","result":"ok","correlationId":"8c90ec5d-a7ea-4ef7-a0da-0f58bee537ba","messageId":"b5f2e743-5a51-49ec-a391-7f9048c0fe4d","topic":"news"}
+>>> [grpc] news de la sender-1: json demo
+{"time":"2026-10-17T15:50:39.214847536Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-1","event":"receive","result":"ok","correlationId":"ab2f8fdb-9b0f-4154-9c14-2bae18abebf2","messageId":"6953a3a7-cd46-4326-857f-71addeae1ed1","topic":"news"}
+{"time":"2026-10-17T15:50:39.217254881Z","level":"WARN","msg":"conexiune pierdută, reîncerc","component":"receiver","receiver":"receiver-1","event":"reconnect","attempt":1,"max":5,"in":"2s","code":"Unavailable"}

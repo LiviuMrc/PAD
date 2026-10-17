@@ -1,0 +1,53 @@
+// Contractul brokerului, versiunea 1 (pachetul broker.v1).
+// Reguli de compatibilitate:
+//  - numerele câmpurilor nu se schimbă și nu se refolosesc;
+//  - un câmp nou primește un număr nou, iar consumatorii vechi îl ignoră;
+//  - o schimbare incompatibilă se face într-un pachet nou (broker.v2).
+syntax = "proto3";
+
+package broker.v1;
+
+option go_package = "lab2/gen/brokerpb;brokerpb";
+
+// Message este mesajul publicat și livrat. Are aceleași câmpuri ca în Lab 1 (XML),
+// fără messageType: tipul operației e dat acum de metoda RPC apelată.
+message Message {
+  string message_id = 1;      // unic per mesaj
+  string correlation_id = 2;  // același pe tot fluxul sender → broker → receiver
+  string schema_version = 3;  // "1.0"
+  string occurred_at = 4;     // UTC, RFC3339, cu sufixul Z
+  string sender = 5;
+  string topic = 6;
+  string payload = 7;         // max 4096 caractere
+}
+
+message PublishRequest {
+  Message message = 1;
+}
+
+// PublishReply este confirmarea (echivalentul ACK din Lab 1).
+message PublishReply {
+  string message_id = 1;      // mesajul confirmat
+  string correlation_id = 2;
+  int32 subscribers = 3;      // în câte cozi a fost pus mesajul
+}
+
+message SubscribeRequest {
+  string receiver_id = 1;     // identificator stabil = cheia cozii din broker
+  repeated string topics = 2;
+  string correlation_id = 3;
+}
+
+// Erorile fac parte din contract (coduri gRPC standard):
+//  INVALID_ARGUMENT   mesaj sau cerere care nu respectă regulile de validare (nu se reîncearcă)
+//  DEADLINE_EXCEEDED  clientul nu a primit răspuns în timpul stabilit
+//  UNAVAILABLE        brokerul nu rulează / conexiunea s-a pierdut (receiverul se reconectează)
+// Un Subscribe nou cu același receiver_id închide sesiunea veche (CANCELED) și preia coada.
+service Broker {
+  // Publish pune mesajul în coada fiecărui abonat la topic.
+  rpc Publish(PublishRequest) returns (PublishReply);
+
+  // Subscribe abonează receiverul la topicuri. Brokerul trimite prin stream
+  // întâi mesajele din coadă (cele publicate cât receiverul a fost offline), apoi pe cele noi.
+  rpc Subscribe(SubscribeRequest) returns (stream Message);
+}
