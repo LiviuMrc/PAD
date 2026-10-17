@@ -45,7 +45,7 @@ flowchart LR
 | confirmarea abonării | mesaj `ACK` | header-ul stream-ului (`stream.Header()`) |
 | concurență | o goroutine per conexiune, creată manual | gRPC rulează fiecare apel în propria goroutine |
 | deadline | `SetReadDeadline` pe socket | `context.WithTimeout`, propagat automat la server |
-| health check | endpoint HTTP | serviciul standard `grpc.health.v1.Health` |
+| health check | endpoint HTTP | serviciul standard `grpc.health.v1.Health` (+ reflection pentru grpcurl) |
 | multicast UDP | da | nu: e un mecanism de socket, iar fan-out-ul pe topic îl înlocuiește |
 
 ## Componente

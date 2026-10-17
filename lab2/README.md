@@ -63,6 +63,14 @@ go run ./sender -topic "nu e valid" -payload x       # code=InvalidArgument: top
 
 **JSON:** `go run ./sender -topic news -payload x -json`
 
+**Cu un client gRPC independent ([grpcurl](https://github.com/fullstorydev/grpcurl)).** Brokerul are
+reflection activat, deci nu e nevoie de fișierul `.proto`:
+```bash
+grpcurl -plaintext 127.0.0.1:50061 list
+grpcurl -plaintext -d '{"service":"broker.v1.Broker"}' 127.0.0.1:50061 grpc.health.v1.Health/Check
+grpcurl -plaintext -d '{"receiver_id":"r9","topics":["news"]}' 127.0.0.1:50061 broker.v1.Broker/Subscribe
+```
+
 **Broker căzut:** oprește brokerul. `sender` primește `code=Unavailable`, iar receiverele
 reîncearcă de 5 ori, la 2 secunde, apoi se opresc.
 

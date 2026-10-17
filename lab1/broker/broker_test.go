@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"net/http/httptest"
+	"net"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -182,15 +183,26 @@ func TestBrokerOnlyAcceptsSubscribeAndPublish(t *testing.T) {
 
 func TestHealth(t *testing.T) {
 	b, _ := startBroker(t, nil)
-	h := b.HealthHandler()
+
+	// server HTTP real, pe un port TCP, apelat cu un client HTTP real
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := &http.Server{Handler: b.HealthHandler()}
+	go srv.Serve(ln)
+	t.Cleanup(func() { srv.Close() })
 
 	for path, wantStatus := range map[string]string{"/health/live": "up", "/health/ready": "degraded"} {
-		rec := httptest.NewRecorder()
-		h.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		resp, err := http.Get("http://" + ln.Addr().String() + path)
+		if err != nil {
+			t.Fatal(err)
+		}
 		var body map[string]any
-		_ = json.Unmarshal(rec.Body.Bytes(), &body)
-		if rec.Code != 200 || body["status"] != wantStatus {
-			t.Errorf("%s: cod %d, status %v (așteptat %s)", path, rec.Code, body["status"], wantStatus)
+		_ = json.NewDecoder(resp.Body).Decode(&body)
+		resp.Body.Close()
+		if resp.StatusCode != 200 || body["status"] != wantStatus {
+			t.Errorf("%s: cod %d, status %v (așteptat %s)", path, resp.StatusCode, body["status"], wantStatus)
 		}
 	}
 }
