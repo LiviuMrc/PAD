@@ -37,6 +37,10 @@ să poată trimite mesaje receiverului din proprie inițiativă (push), nu doar 
   același mesaj în JSON.
 
 ## Limita cunoscută
+> **Actualizare lab2-v1.2:** limitele de livrare și de persistență de mai jos au fost rezolvate prin
+> `Ack`, jurnal pe disc și deduplicare. Vezi [ADR 002](002-livrare-at-least-once-si-persistenta.md).
+> Brokerul a rămas un singur punct de eșec.
+
 Ca în Lab 1, livrarea e **best-effort**. Un mesaj trimis cu `stream.Send` e considerat livrat, deși
 receiverul poate cădea înainte să-l citească din buffer-ul HTTP/2. Cozile sunt în memorie și se pierd la
 repornirea brokerului. Mai există și o limită nouă, specifică RPC: brokerul e un singur punct de eșec.

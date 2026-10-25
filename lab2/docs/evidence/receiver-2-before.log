@@ -1,3 +1,5 @@
-{"time":"2026-10-17T15:50:37.879496622Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-2","event":"subscribe","result":"ok","topics":["news","alerts"],"correlationId":"1502a5a9-e646-48ea-b6ba-78153864e7a0"}
+{"time":"2026-10-25T10:06:19.703782823Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-2","event":"subscribe","result":"ok","topics":["news","alerts"],"correlationId":"6f857cc1-9390-4c89-bf30-032466a49bb3"}
 >>> [grpc] news de la sender-1: mesaj 1 (ambii online)
-{"time":"2026-10-17T15:50:38.381163233Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"6715e71c-e319-4c57-80d0-906fe43858cc","messageId":"99e41d5c-04a9-4b04-8cb0-e5f5357b82ec","topic":"news"}
+{"time":"2026-10-25T10:06:20.2011101Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"956507a3-ade7-4002-8931-5b9fa82e9801","messageId":"51bb9186-4c21-49ac-8d0e-29437f382d44","topic":"news"}
+{"time":"2026-10-25T10:06:20.202778149Z","level":"WARN","msg":"confirmare eșuată, mesajul va fi retrimis","component":"receiver","receiver":"receiver-2","event":"ack","result":"failed","messageId":"51bb9186-4c21-49ac-8d0e-29437f382d44","code":"Canceled"}
+{"time":"2026-10-25T10:06:20.202810835Z","level":"INFO","msg":"receiver oprit","component":"receiver","receiver":"receiver-2","event":"receiver.stopped"}

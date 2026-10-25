@@ -70,15 +70,23 @@ func TestContractFieldNumbers(t *testing.T) {
 	want := map[string]map[protoreflect.FieldNumber]string{
 		"Message": {1: "message_id", 2: "correlation_id", 3: "schema_version", 4: "occurred_at",
 			5: "sender", 6: "topic", 7: "payload"},
-		"PublishRequest":   {1: "message"},
-		"PublishReply":     {1: "message_id", 2: "correlation_id", 3: "subscribers"},
-		"SubscribeRequest": {1: "receiver_id", 2: "topics", 3: "correlation_id"},
+		"PublishRequest":     {1: "message"},
+		"PublishReply":       {1: "message_id", 2: "correlation_id", 3: "subscribers", 4: "duplicate"},
+		"SubscribeRequest":   {1: "receiver_id", 2: "topics", 3: "correlation_id"},
+		"AckRequest":         {1: "receiver_id", 2: "message_id"},
+		"AckReply":           {1: "removed"},
+		"UnsubscribeRequest": {1: "receiver_id", 2: "correlation_id"},
+		"UnsubscribeReply":   {1: "dropped"},
 	}
 	msgs := map[string]protoreflect.MessageDescriptor{
-		"Message":          (&brokerpb.Message{}).ProtoReflect().Descriptor(),
-		"PublishRequest":   (&brokerpb.PublishRequest{}).ProtoReflect().Descriptor(),
-		"PublishReply":     (&brokerpb.PublishReply{}).ProtoReflect().Descriptor(),
-		"SubscribeRequest": (&brokerpb.SubscribeRequest{}).ProtoReflect().Descriptor(),
+		"Message":            (&brokerpb.Message{}).ProtoReflect().Descriptor(),
+		"PublishRequest":     (&brokerpb.PublishRequest{}).ProtoReflect().Descriptor(),
+		"PublishReply":       (&brokerpb.PublishReply{}).ProtoReflect().Descriptor(),
+		"SubscribeRequest":   (&brokerpb.SubscribeRequest{}).ProtoReflect().Descriptor(),
+		"AckRequest":         (&brokerpb.AckRequest{}).ProtoReflect().Descriptor(),
+		"AckReply":           (&brokerpb.AckReply{}).ProtoReflect().Descriptor(),
+		"UnsubscribeRequest": (&brokerpb.UnsubscribeRequest{}).ProtoReflect().Descriptor(),
+		"UnsubscribeReply":   (&brokerpb.UnsubscribeReply{}).ProtoReflect().Descriptor(),
 	}
 	for name, fields := range want {
 		d := msgs[name]
@@ -93,10 +101,23 @@ func TestContractFieldNumbers(t *testing.T) {
 		}
 	}
 	svc := brokerpb.File_broker_proto.Services().ByName("Broker")
-	for _, method := range []string{"Publish", "Subscribe"} {
+	for _, method := range []string{"Publish", "Subscribe", "Ack", "Unsubscribe"} {
 		if svc.Methods().ByName(protoreflect.Name(method)) == nil {
 			t.Errorf("lipsește metoda %s", method)
 		}
+	}
+}
+
+// Un PublishReply scris de brokerul vechi (fără câmpul duplicate) e citit de clientul
+// nou cu duplicate=false, iar clientul vechi ignoră câmpul nou.
+func TestPublishReplyIsBackwardCompatible(t *testing.T) {
+	old := protowire.AppendTag(nil, 1, protowire.BytesType)
+	old = protowire.AppendString(old, "m1")
+	old = protowire.AppendTag(old, 3, protowire.VarintType)
+	old = protowire.AppendVarint(old, 2)
+	var r brokerpb.PublishReply
+	if err := proto.Unmarshal(old, &r); err != nil || r.MessageId != "m1" || r.Subscribers != 2 || r.Duplicate {
+		t.Fatalf("răspuns vechi citit greșit: %+v %v", &r, err)
 	}
 }
 

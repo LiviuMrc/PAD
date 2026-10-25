@@ -2,6 +2,7 @@
 // Reguli de compatibilitate:
 //  - numerele câmpurilor nu se schimbă și nu se refolosesc;
 //  - un câmp nou primește un număr nou, iar consumatorii vechi îl ignoră;
+//  - o metodă nouă nu schimbă metodele existente (clienții vechi nu o apelează);
 //  - o schimbare incompatibilă se face într-un pachet nou (broker.v2).
 syntax = "proto3";
 
@@ -12,7 +13,7 @@ option go_package = "lab2/gen/brokerpb;brokerpb";
 // Message este mesajul publicat și livrat. Are aceleași câmpuri ca în Lab 1 (XML),
 // fără messageType: tipul operației e dat acum de metoda RPC apelată.
 message Message {
-  string message_id = 1;      // unic per mesaj
+  string message_id = 1;      // unic per mesaj; cheia de deduplicare și de confirmare (Ack)
   string correlation_id = 2;  // același pe tot fluxul sender → broker → receiver
   string schema_version = 3;  // "1.0"
   string occurred_at = 4;     // UTC, RFC3339, cu sufixul Z
@@ -30,24 +31,55 @@ message PublishReply {
   string message_id = 1;      // mesajul confirmat
   string correlation_id = 2;
   int32 subscribers = 3;      // în câte cozi a fost pus mesajul
+  bool duplicate = 4;         // true = message_id deja acceptat; mesajul nu a fost pus din nou în cozi
 }
 
 message SubscribeRequest {
   string receiver_id = 1;     // identificator stabil = cheia cozii din broker
-  repeated string topics = 2;
+  repeated string topics = 2; // înlocuiesc topicurile abonării anterioare cu același receiver_id
   string correlation_id = 3;
+}
+
+// AckRequest confirmă că receiverul a procesat mesajul. Abia atunci mesajul iese din coadă.
+message AckRequest {
+  string receiver_id = 1;
+  string message_id = 2;
+}
+
+message AckReply {
+  bool removed = 1;           // false = mesajul nu mai era în coadă (ACK repetat)
+}
+
+message UnsubscribeRequest {
+  string receiver_id = 1;
+  string correlation_id = 2;
+}
+
+message UnsubscribeReply {
+  int32 dropped = 1;          // mesaje neconfirmate șterse odată cu coada
 }
 
 // Erorile fac parte din contract (coduri gRPC standard):
 //  INVALID_ARGUMENT   mesaj sau cerere care nu respectă regulile de validare (nu se reîncearcă)
-//  DEADLINE_EXCEEDED  clientul nu a primit răspuns în timpul stabilit
-//  UNAVAILABLE        brokerul nu rulează / conexiunea s-a pierdut (receiverul se reconectează)
-// Un Subscribe nou cu același receiver_id închide sesiunea veche (CANCELED) și preia coada.
+//  DEADLINE_EXCEEDED  termenul apelului a expirat; brokerul nu mai pune mesajul în cozi
+//  UNAVAILABLE        brokerul nu rulează sau se oprește (se reîncearcă)
+//  UNAUTHENTICATED    lipsește tokenul sau e greșit (nu se reîncearcă)
+//  NOT_FOUND          Ack/Unsubscribe pentru un receiver_id necunoscut
+//  CANCELED           sesiunea Subscribe a fost închisă: alt Subscribe cu același receiver_id
+//                     a preluat coada, sau receiverul s-a dezabonat
 service Broker {
-  // Publish pune mesajul în coada fiecărui abonat la topic.
+  // Publish pune mesajul în coada fiecărui abonat la topic. Un message_id deja acceptat
+  // nu e pus din nou (duplicate = true), deci retrimiterea după o eroare e sigură.
   rpc Publish(PublishRequest) returns (PublishReply);
 
-  // Subscribe abonează receiverul la topicuri. Brokerul trimite prin stream
-  // întâi mesajele din coadă (cele publicate cât receiverul a fost offline), apoi pe cele noi.
+  // Subscribe abonează receiverul la topicuri. Brokerul trimite prin stream întâi
+  // mesajele neconfirmate din coadă, apoi pe cele noi. Livrarea e at-least-once:
+  // un mesaj rămâne în coadă până la Ack și se retrimite la următoarea sesiune.
   rpc Subscribe(SubscribeRequest) returns (stream Message);
+
+  // Ack scoate mesajul din coada receiverului.
+  rpc Ack(AckRequest) returns (AckReply);
+
+  // Unsubscribe șterge abonarea și coada receiverului și închide sesiunea lui activă.
+  rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeReply);
 }

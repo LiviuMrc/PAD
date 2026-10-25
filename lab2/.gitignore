@@ -3,5 +3,8 @@
 # protoc și plugin-urile descărcate de scripts/gen.sh
 /.tools/
 /bin/
+# jurnalul brokerului (BROKER_DATA_DIR implicit) și certificatele locale (scripts/certs.sh)
+/data/
+/certs/
 *.test
 .env

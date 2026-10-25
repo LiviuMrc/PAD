@@ -1,23 +1,46 @@
 ### 1. Publish cu ambele receivere online
-{"time":"2026-10-17T15:50:38.381300702Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"6715e71c-e319-4c57-80d0-906fe43858cc","messageId":"99e41d5c-04a9-4b04-8cb0-e5f5357b82ec","topic":"news","subscribers":2,"duration_ms":1}
+{"time":"2026-10-25T10:06:20.20107734Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"956507a3-ade7-4002-8931-5b9fa82e9801","messageId":"51bb9186-4c21-49ac-8d0e-29437f382d44","topic":"news","subscribers":2,"duplicate":false,"attempt":1,"duration_ms":3}
 ### 2. injectarea eșecului: receiver-2 este oprit
 ### 3. Publish cât timp receiver-2 e offline
-{"time":"2026-10-17T15:50:38.69003231Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"8c90ec5d-a7ea-4ef7-a0da-0f58bee537ba","messageId":"b5f2e743-5a51-49ec-a391-7f9048c0fe4d","topic":"news","subscribers":2,"duration_ms":1}
-{"time":"2026-10-17T15:50:38.695032418Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"61c34eef-2423-468c-bb70-5cebc986feb3","messageId":"d0e2275a-adf8-4d80-a163-7f2d8f2df45a","topic":"alerts","subscribers":1,"duration_ms":1}
-### 4. recuperarea: receiver-2 repornește cu același id
-### 5. validare: schemaVersion 2.0 și topic invalid sunt respinse (INVALID_ARGUMENT)
-{"time":"2026-10-17T15:50:39.20521Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"InvalidArgument","correlationId":"2298d86f-4278-426d-b335-d7150396d006","messageId":"0f9ad066-9f15-46cd-91fc-0448cb1288e0","error":"schemaVersion nesuportat: \"2.0\" (suportat: 1.0)","duration_ms":1}
-{"time":"2026-10-17T15:50:39.208922269Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"InvalidArgument","correlationId":"b009a5e5-fdf4-40e5-ab41-e8efbe99c801","messageId":"3570a742-3597-4c56-99dd-054250f1ba97","error":"topic invalid: \"topic invalid\"","duration_ms":0}
-### 6. același mesaj în format proto (text) și JSON
-proto: message_id: "6953a3a7-cd46-4326-857f-71addeae1ed1"
-correlation_id: "ab2f8fdb-9b0f-4154-9c14-2bae18abebf2"
+{"time":"2026-10-25T10:06:20.511133945Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"8a2bcce9-07e5-491f-8e24-4b7bbb92ca01","messageId":"479ccd17-e18c-4b96-bc36-a906fdabd79f","topic":"news","subscribers":2,"duplicate":false,"attempt":1,"duration_ms":3}
+{"time":"2026-10-25T10:06:20.516937262Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"c1e3d733-3217-4fae-a5a2-7597fec52831","messageId":"669ee9ae-e355-49d0-b9ce-796921859fdd","topic":"alerts","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":2}
+### 4. recuperarea: receiver-2 repornește cu același id și primește mesajele neconfirmate
+### 5. validare: schemaVersion 2.0 și topic invalid sunt respinse (INVALID_ARGUMENT, fără reîncercări)
+{"time":"2026-10-25T10:06:21.024896998Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"InvalidArgument","correlationId":"982cef98-df50-4631-8c48-72f53785b0d7","messageId":"aa9a1e75-a699-40c1-ab36-64dd6fa19cc8","error":"schemaVersion nesuportat: \"2.0\" (suportat: 1.0)","attempt":1,"duration_ms":1}
+{"time":"2026-10-25T10:06:21.029564057Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"InvalidArgument","correlationId":"aded226c-a898-4500-aa8f-c794024f36f3","messageId":"364430e8-449e-4e73-b443-e0bc613f4f5c","error":"topic invalid: \"topic invalid\"","attempt":1,"duration_ms":1}
+### 6. același mesaj în format proto (text) și JSON; apoi trimis pe fir ca JSON (-codec json)
+proto: message_id: "aeb1c516-d967-43ea-be3a-c55a002209e5"
+correlation_id: "2eba6848-5999-4421-a1c5-e19e91a1ad82"
 schema_version: "1.0"
-occurred_at: "2026-10-17T15:50:39Z"
+occurred_at: "2026-10-25T10:06:21Z"
 sender: "sender-1"
 topic: "news"
 payload: "json demo"
 
-JSON : {"messageId":"6953a3a7-cd46-4326-857f-71addeae1ed1","correlationId":"ab2f8fdb-9b0f-4154-9c14-2bae18abebf2","schemaVersion":"1.0","occurredAt":"2026-10-17T15:50:39Z","sender":"sender-1","topic":"news","payload":"json demo"}
-{"time":"2026-10-17T15:50:39.214978985Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"ab2f8fdb-9b0f-4154-9c14-2bae18abebf2","messageId":"6953a3a7-cd46-4326-857f-71addeae1ed1","topic":"news","subscribers":2,"duration_ms":1}
-### 7. brokerul cade: receiverele reîncearcă de un număr limitat de ori
-{"time":"2026-10-17T15:50:39.521015751Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"Unavailable","correlationId":"337e6252-8f83-419d-b9c3-14019fad8c21","messageId":"59b9645c-d64a-4202-8a43-8f7a3c0906e6","error":"connection error: desc = \"transport: Error while dialing: dial tcp 127.0.0.1:50061: connect: connection refused\"","duration_ms":0}
+JSON : {"messageId":"aeb1c516-d967-43ea-be3a-c55a002209e5","correlationId":"2eba6848-5999-4421-a1c5-e19e91a1ad82","schemaVersion":"1.0","occurredAt":"2026-10-25T10:06:21Z","sender":"sender-1","topic":"news","payload":"json demo"}
+{"time":"2026-10-25T10:06:21.039981287Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"2eba6848-5999-4421-a1c5-e19e91a1ad82","messageId":"aeb1c516-d967-43ea-be3a-c55a002209e5","topic":"news","subscribers":2,"duplicate":false,"attempt":1,"duration_ms":6}
+{"time":"2026-10-25T10:06:21.044785145Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"5613f1a7-90f0-4f79-9e18-66ffabb4366c","messageId":"8decde74-9885-4e30-aaf8-f0e846933373","topic":"news","subscribers":2,"duplicate":false,"attempt":1,"duration_ms":2}
+### 7. client independent: curl face un apel gRPC cu corp JSON (application/grpc+json)
+$ curl --http2-prior-knowledge -H 'content-type: application/grpc+json' http://127.0.0.1:50061/broker.v1.Broker/Publish
+cerere: {"message":{"messageId":"e437978c-277c-4c4d-8da2-dc2883cb45c7","correlationId":"705869e6-4fcc-428d-a627-5acf52fdc56f","schemaVersion":"1.0","occurredAt":"2026-10-25T10:06:21Z","sender":"curl","topic":"news","payload":"trimis cu curl"}}
+răspuns: {"messageId":"e437978c-277c-4c4d-8da2-dc2883cb45c7", "correlationId":"705869e6-4fcc-428d-a627-5acf52fdc56f", "subscribers":2}
+HTTP/2 200 
+content-type: application/grpc+json
+grpc-status: 0
+### 8. kill -9 pe broker cu receiver-2 offline: mesajul confirmat e deja în jurnal
+{"time":"2026-10-25T10:06:21.368122242Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"b74f1489-190c-4d61-8fc6-60f65a0487c6","messageId":"4b64490f-aeb5-46e9-822b-9c31c7dade34","topic":"alerts","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":5}
+brokerul a fost omorât cu SIGKILL
+### 9. dezabonare: receiver-2 iese, iar coada lui e ștearsă (news mai are un singur abonat)
+{"time":"2026-10-25T10:06:23.287001723Z","level":"INFO","msg":"dezabonat","component":"receiver","receiver":"receiver-2","event":"unsubscribe","result":"ok","dropped":0}
+{"time":"2026-10-25T10:06:23.293047038Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"ee65ec68-6763-424d-a960-5162f33930f0","messageId":"ed478984-0318-4dc0-b4c0-9b1980cb30ee","topic":"news","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":2}
+### 10. TLS + token: un broker separat pe 127.0.0.1:50062
+-- cu CA și token corect:
+{"time":"2026-10-25T10:06:23.835867851Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"0c0e69b2-49f0-4bc0-b8ba-92945da35e7b","messageId":"316b599a-ace4-4219-a1e8-989e7a101858","topic":"news","subscribers":0,"duplicate":false,"attempt":1,"duration_ms":3}
+-- fără token:
+{"time":"2026-10-25T10:06:23.842108478Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"Unauthenticated","correlationId":"86a772ce-463c-4a0a-a540-db085cf8691a","messageId":"963865fe-bfac-48f2-907f-d65935d51077","error":"token lipsă sau greșit","attempt":1,"duration_ms":2}
+-- fără TLS:
+{"time":"2026-10-25T10:06:24.845312593Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"Unavailable","correlationId":"c30c8b2f-91ac-40c9-9264-d2be1a687d20","messageId":"56f333f5-9a0e-416b-9078-ac00451c275a","error":"brokerul nu răspunde în 1s (conexiune TRANSIENT_FAILURE)","attempt":1,"duration_ms":1000}
+### 11. brokerul se oprește (SIGTERM): receiverele reîncearcă de 3 ori, apoi renunță
+receiver-1 s-a oprit cu codul 1
+{"time":"2026-10-25T10:06:28.560011126Z","level":"WARN","msg":"publicare eșuată, reîncerc cu același messageId","component":"sender","event":"publish","result":"retry","code":"Unavailable","correlationId":"313aad50-7127-4d32-8c3c-89512231fedf","messageId":"4361e6cb-ceb6-4016-b354-3ba8f0ba5fb9","attempt":1,"max":1,"in":"200ms"}
+{"time":"2026-10-25T10:06:29.260822147Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"Unavailable","correlationId":"313aad50-7127-4d32-8c3c-89512231fedf","messageId":"4361e6cb-ceb6-4016-b354-3ba8f0ba5fb9","error":"brokerul nu răspunde în 500ms (conexiune TRANSIENT_FAILURE)","attempt":2,"duration_ms":500}

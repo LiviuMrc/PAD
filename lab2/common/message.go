@@ -75,10 +75,18 @@ func Validate(m *brokerpb.Message) error {
 	return nil
 }
 
+// ValidateID verifică un identificator (receiverId, messageId): 1-64 caractere [A-Za-z0-9-].
+func ValidateID(field, v string) error {
+	if !idPattern.MatchString(v) {
+		return fmt.Errorf("%s invalid: %q", field, v)
+	}
+	return nil
+}
+
 // ValidateSubscribe verifică cererea de abonare.
 func ValidateSubscribe(r *brokerpb.SubscribeRequest) error {
-	if !idPattern.MatchString(r.ReceiverId) {
-		return fmt.Errorf("receiverId invalid: %q", r.ReceiverId)
+	if err := ValidateID("receiverId", r.ReceiverId); err != nil {
+		return err
 	}
 	if len(r.Topics) == 0 {
 		return fmt.Errorf("cel puțin un topic")
