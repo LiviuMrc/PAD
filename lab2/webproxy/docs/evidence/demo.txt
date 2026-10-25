@@ -1,0 +1,112 @@
+
+=== 0. infrastructura: Cassandra + Redis (docker compose), binarele
+ Container lab2-webproxy-redis-1 Running 
+ Container lab2-webproxy-cassandra-1 Running 
+aștept Cassandra și Redis gata
+  OK: Cassandra 4.1.12, v=7.4.11
+
+=== Etapa 1 — PUT: nodurile de stocare au trimis datele la DW (prin proxy)
+{"time":"2026-10-25T11:21:17.914741603Z","level":"INFO","msg":"date trimise la DW","component":"source","source":"src1","event":"source.synced","employees":5,"format":"xml"}
+{"time":"2026-10-25T11:21:17.968904922Z","level":"INFO","msg":"date trimise la DW","component":"source","source":"src2","event":"source.synced","employees":4,"format":"json"}
+  OK: src1 a trimis în XML
+  OK: DW are 9 angajați (5 de la src1, 4 de la src2)
+
+=== Etapa 1 — GET /employees/?offset=1&limit=4, clientul alege formatul
+--- JSON (Accept: application/json)
+{
+  "offset": 1,
+  "limit": 4,
+  "total": 9,
+  "employees": [
+    {
+      "id": 2,
+      "firstName": "Mihai",
+      "lastName": "Ionescu",
+      "email": "mihai.ionescu@example.com",
+      "department": "IT",
+      "position": "DevOps",
+      "salary": 5600,
+      "source": "src1",
+--- XML (Accept: application/xml)
+<?xml version="1.0" encoding="UTF-8"?>
+<employees offset="1" limit="4" total="9">
+  <employee>
+    <id>2</id>
+    <firstName>Mihai</firstName>
+    <lastName>Ionescu</lastName>
+    <email>mihai.ionescu@example.com</email>
+    <department>IT</department>
+  OK: JSON: 4 angajați, primul cu id 2
+  OK: XML: <employees offset="1" limit="4" total="9">
+  OK: ?format=xml are prioritate față de Accept
+  OK: Accept: text/html -> 406
+  OK: PUT cu Content-Type: text/plain -> 415
+  OK: GET /employee/?id=999 -> 404
+
+=== Etapa 2 — load balancing round-robin (cereri fără cache)
+  X-Served-By: dw3 dw1 dw2 dw3 dw1 dw2
+  OK: fiecare DW servește pe rând
+
+=== Etapa 2 — caching în Redis
+  GET /employee/?id=3: MISS, apoi HIT
+  OK: MISS, apoi HIT
+  OK: în XML e altă intrare (MISS)
+  OK: If-None-Match pe ETag-ul din cache -> 304
+  chei în Redis: 7 intrări de cache
+--- POST (modificare de la un client) -> invalidare
+  "position": "HR Lead",
+  "version": 2,
+  OK: după POST: MISS și date noi
+{"time":"2026-10-25T11:21:18.413762371Z","level":"INFO","msg":"cache invalidat","component":"proxy","proxy":"proxy1","event":"cache.invalidate","tags":["employee:3","employees"],"deleted":7}
+
+=== Etapa 1 — POST + push: modificarea ajunge la nodul sursă src1
+{"time":"2026-10-25T11:21:18.417196711Z","level":"INFO","msg":"modificare aplicată local","component":"source","source":"src1","event":"source.apply","via":"push","op":"update","id":3,"seq":"32e1d58d-d066-11f1-a510-d065
+  OK: src1 a aplicat-o prin push, în fișierul local
+
+=== Etapa 1 — POST + pull: src2 cere periodic GET /update/employees/
+{"time":"2026-10-25T11:21:18.983709838Z","level":"INFO","msg":"modificare aplicată local","component":"source","source":"src2","event":"source.apply","via":"pull","op":"update","id":101,"seq":"32e66ac0-d066-11f1-9485-d0
+  OK: src2 a aplicat-o prin pull
+--- feed-ul de modificări (XML)
+<?xml version="1.0" encoding="UTF-8"?>
+<changes since="" next="32e1d58d-d066-11f1-a510-d065788374fd">
+  <change>
+    <seq>32e1d58d-d066-11f1-a510-d065788374fd</seq>
+    <op>update</op>
+    <id>3</id>
+
+=== Etapa 2 — failover: dw2 e oprit, apoi pornit din nou
+  cu dw2 oprit (cod:DW): 200:dw1 200:dw3 200:dw1 200:dw3 200:dw3 200:dw1 
+  OK: toate 200, niciuna de la dw2
+  OK: proxy-ul l-a scos din rotație
+  după repornire: dw1 dw2 dw3 dw1 dw2 dw3
+  OK: dw2 revine în rotație
+
+=== Etapa 2 — smart proxy: conexiunea keep-alive a clientului, în evidența din Redis
+      "lastRequestAt": "2026-10-25T11:21:19.920431166Z"
+    },
+    {
+      "id": "proxy1-1792927280355-45",
+      "proxy": "proxy1",
+      "remote": "127.0.0.1:56072",
+      "openedAt": "2026-10-25T11:21:20.355734316Z",
+      "state": "active",
+      "requests": 2,
+      "lastRequest": "GET /_proxy/connections",
+      "lastRequestAt": "2026-10-25T11:21:20.356692674Z"
+    }
+  ]
+}
+  OK: aceeași conexiune a purtat mai multe cereri
+  OK: evidența e în Redis
+
+=== Etapa 1 — procesare concurentă (thread-per-request) și excludere reciprocă
+  maxInflight (cel mai mare, dintre DW-uri): 4
+  OK: DW-urile au procesat cereri simultan
+  salariul: 4300 -> 4330 (30 de modificări concurente prin 3 DW)
+  OK: nicio modificare pierdută (LWT în Cassandra)
+
+=== Persistență: repornirea proxy-ului și a DW-urilor
+  OK: cache-ul din Redis supraviețuiește repornirii proxy-ului (HIT)
+  OK: datele sunt în Cassandra după repornirea DW-urilor
+
+TOATE VERIFICĂRILE AU TRECUT. Log-uri: webproxy/docs/evidence/

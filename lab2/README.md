@@ -1,4 +1,11 @@
-# Lab 2: Message Broker cu RPC (gRPC + Protocol Buffers)
+# Lab 2
+
+> **Lucrarea curentă (`cerinte.pdf`): Web proxy — DW + reverse proxy cu caching și load
+> balancing**, în [`webproxy/`](webproxy/README.md). Validare completă: `./webproxy/scripts/validate.sh`.
+> Restul acestui fișier descrie brokerul gRPC din același folder (Partea 2 a lucrării
+> „Agent de mesagerie”).
+
+## Message Broker cu RPC (gRPC + Protocol Buffers)
 
 Este Partea 2 a lucrării „Agent de mesagerie. Invocarea la distanță”. Arhitectura e aceeași ca în
 [Lab 1](../lab1/) (sender, broker, 2 receivere, rutare pe topic, coadă per receiver).
@@ -6,11 +13,12 @@ Diferența este că socket-urile sunt înlocuite cu **RPC-uri gRPC**, iar XML-ul
 
 | Cerință (Partea 2) | Unde |
 |---|---|
-| RPC în loc de socket-uri | serviciul `Broker` din `contracts/broker.proto`: `Publish`, `Ack`, `Unsubscribe` (unary) și `Subscribe` (server streaming) |
+| RPC în loc de socket-uri | serviciul `Broker` din `contracts/broker.proto`: `Publish`, `Ack`, `Unsubscribe`, `ListDeadLetters`, `RedriveDeadLetters`, `PurgeDeadLetters` (unary) și `Subscribe` (server streaming) |
 | Reprezentarea datelor: proto | `contracts/broker.proto` (pachetul `broker.v1`) |
 | Validarea datelor | `common.Validate`. Brokerul răspunde `INVALID_ARGUMENT` |
 | Procesare concurentă | gRPC rulează fiecare apel în propria goroutine, iar starea e protejată de un mutex (`TestConcurrentPublishers`) |
 | Rutare pe topic + coadă per receiver | `internal/broker/broker.go` |
+| Dead-letter queue | coada plină sau receiverul expirat mută mesajele în DLQ, nu le șterge; `go run ./dlq` le listează, retrimite sau șterge |
 | JSON | codec gRPC JSON (`common/codec.go`): `-codec json` trimite mesajele pe fir ca JSON (`application/grpc+json`); `sender -json` afișează mesajul în proto text și JSON |
 
 Documentație: [arhitectură + comparație cu Lab 1](docs/architecture.md) ·
@@ -66,6 +74,21 @@ cu aceeași comandă. Primește imediat mesajele publicate cât a fost oprit.
 reconectează singure și primesc mesajele neconfirmate.
 
 **Dezabonare:** `go run ./receiver -id receiver-2 -unsubscribe` șterge abonarea și coada.
+
+**DLQ (dead-letter queue):** când coada unui receiver depășește `MAX_QUEUE`, cel mai vechi mesaj
+nu e șters, ci mutat în DLQ (motiv `queue_overflow`). La fel, mesajele unui receiver offline mai
+mult de `RECEIVER_TTL_SEC` (motiv `receiver_expired`). DLQ e salvată în jurnal.
+```bash
+go run ./broker -max-queue 2                          # T1: limită mică, ca să se umple repede
+go run ./receiver -id r3 -topics news                 # T2, apoi Ctrl+C (r3 e offline)
+for i in 1 2 3 4; do go run ./sender -topic news -payload "m$i"; done
+go run ./dlq                                          # DLQ: 2 mesaje (m1, m2), queue_overflow
+go run ./receiver -id r3 -topics news                 # T2: primește m3, m4
+go run ./dlq -redrive -receiver r3                    # m1, m2 revin în coadă și ajung la r3
+go run ./dlq -purge -receiver r3                      # sau: șterge-le definitiv
+```
+`-ids id1,id2` alege doar anumite mesaje. Redrive cere ca receiverul să fie abonat
+(altfel `FAILED_PRECONDITION`) și lasă în DLQ mesajele de pe topicuri la care nu mai e abonat.
 
 **Validare:**
 ```bash
@@ -124,6 +147,7 @@ gRPC reali. Testele din `broker/` compilează binarul și îl rulează ca proces
 | integrare | `TestPublishReachesBothReceivers`, `TestRoutingByTopic`, `TestResubscribeReplacesTopics`, `TestUnsubscribe`, `TestReflectionListsServices` |
 | reprezentare | `TestJSONCodecOnTheWire` (octeții reali de pe fir, printr-un proxy TCP), `TestJSONCodecIsRegisteredAndRoundTrips` |
 | concurență | `TestConcurrentPublishers` (10 senderi × 20 mesaje în paralel, fără pierderi și fără duplicate) |
+| DLQ | `TestOverflowMovesOldestToDLQ`, `TestExpiredReceiverMessagesGoToDLQ`, `TestRedriveSkipsUnsubscribedTopicsAndPurge`, `TestAckRemovesInFlightMessageFromDLQ`, `TestDLQIsBounded`, `TestDLQSurvivesRestartAndCompaction`, `TestListRedrivePurge` (comanda `dlq`) |
 | eșec | `TestInvalidMessagesAreRejected`, `TestServerDropsPublishWhoseDeadlineExpired`, `TestSameReceiverIdTakesOver`, `TestSessionEndReason`, `TestCorruptJournalIsAnError` |
 | recuperare | `TestOfflineReceiverGetsQueuedMessagesOnReconnect`, `TestUnackedMessageIsRedelivered`, `TestTakeoverRedeliversUnacked`, `TestStateSurvivesRestart`, `TestTornTailIsTrimmed`, `TestCompactionKeepsState` |
 | proces real | `TestSIGTERMShutsDownGracefully`, `TestReadsDotEnv`, `TestQueuedMessagesSurviveKill9` |
@@ -138,6 +162,9 @@ service Broker {
   rpc Subscribe(SubscribeRequest) returns (stream Message);   // brokerul face push pe stream
   rpc Ack(AckRequest) returns (AckReply);                     // receiverul confirmă procesarea
   rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeReply);
+  rpc ListDeadLetters(ListDeadLettersRequest) returns (ListDeadLettersReply);
+  rpc RedriveDeadLetters(RedriveRequest) returns (RedriveReply);       // DLQ → coada receiverului
+  rpc PurgeDeadLetters(PurgeDeadLettersRequest) returns (PurgeDeadLettersReply);
 }
 ```
 
@@ -149,11 +176,12 @@ service Broker {
 | `UNAVAILABLE` | brokerul nu rulează sau se oprește | sender și receiver: da, de un număr limitat de ori |
 | `UNAUTHENTICATED` | lipsește tokenul sau e greșit | nu |
 | `NOT_FOUND` | `Ack`/`Unsubscribe` pentru un receiver necunoscut | nu |
+| `FAILED_PRECONDITION` | `RedriveDeadLetters` pentru un receiver care nu e abonat | după `Subscribe` |
 | `CANCELED` | alt receiver s-a abonat cu același id, sau receiverul a fost dezabonat | nu |
 
 Reguli de versionare (scrise și în `.proto`): numerele câmpurilor nu se schimbă, un câmp sau o metodă
 nouă primește un număr/nume nou, iar o schimbare incompatibilă înseamnă pachetul `broker.v2`.
-`duplicate`, `Ack` și `Unsubscribe` au fost adăugate în v1 fără să strice clienții existenți.
+`duplicate`, `Ack`, `Unsubscribe` și metodele DLQ au fost adăugate în v1 fără să strice clienții existenți.
 
 ## Garanții și limite
 
@@ -169,10 +197,13 @@ nouă primește un număr/nume nou, iar o schimbare incompatibilă înseamnă pa
   Receiverul ignoră retrimiterile deja procesate (după `message_id`).
 - Fiecare apel are deadline. Niciun retry nu e infinit: contorul de reconectări al receiverului
   se resetează doar după o abonare confirmată, iar fiecare încercare chiar contactează brokerul.
-- Coada are maximum `MAX_QUEUE` (1000) mesaje neconfirmate per receiver. Un receiver offline mai mult
-  de `RECEIVER_TTL_SEC` (10 minute) e uitat, cu tot cu coadă.
+- Coada are maximum `MAX_QUEUE` (1000) mesaje neconfirmate per receiver. Peste limită, cel mai vechi
+  mesaj trece în **DLQ** (nu e șters). Un receiver offline mai mult de `RECEIVER_TTL_SEC` (10 minute)
+  e uitat, iar mesajele lui neconfirmate trec tot în DLQ. DLQ supraviețuiește repornirii.
 
 **Limite:**
+- DLQ are și ea o limită (`DLQ_MAX`, 10000). Peste ea, cel mai vechi mesaj din DLQ e eliminat definitiv,
+  cu un log de nivel `ERROR` (`dlq.evict`). `Unsubscribe` șterge coada fără DLQ, pentru că e cerut explicit.
 - Un singur broker, fără replicare: cât timp e oprit, nimeni nu poate publica (senderul reîncearcă limitat).
 - Deduplicarea receiverului e în memorie: după repornirea procesului receiver, un mesaj procesat dar
   neconfirmat poate fi procesat încă o dată (at-least-once, nu exactly-once).
@@ -182,10 +213,11 @@ nouă primește un număr/nume nou, iar o schimbare incompatibilă înseamnă pa
 
 ## Versiune
 
-Versiunea curentă: **`lab2-v1.2`**. Tag-urile deja publicate nu se mută, iar corecturile primesc versiuni noi.
+Versiunea curentă: **`lab2-v1.3`**. Tag-urile deja publicate nu se mută, iar corecturile primesc versiuni noi.
 
 | Versiune | Modificări |
 |---|---|
+| `lab2-v1.3` | dead-letter queue: coada plină și receiverele expirate mută mesajele în DLQ în loc să le șteargă; RPC-urile `ListDeadLetters`, `RedriveDeadLetters`, `PurgeDeadLetters` și comanda `dlq`; DLQ persistentă și limitată (`DLQ_MAX`); `Ack` pe un mesaj ajuns în DLQ îl scoate și de acolo |
 | `lab2-v1.2` | `Ack` (at-least-once) și `Unsubscribe`; jurnal pe disc cu compactare; deduplicare `Publish` și reîncercări în sender; abonarea înlocuiește topicurile; TTL pentru receivere offline; brokerul nu mai pune în cozi mesaje cu termenul expirat; motivul corect la închiderea sesiunii; health `NOT_SERVING` real la oprire, apelurile în curs se termină; TLS și token; codec JSON pe fir; `.env` citit efectiv; reîncercările ocolesc backoff-ul intern gRPC; teste pentru sender, receiver și binarul real |
 | `lab2-v1.1` | receiverul nu mai raportează abonarea ca reușită când e respinsă, curăță spațiile din `-topics` și resetează contorul doar după o abonare confirmată; gRPC reflection pentru grpcurl |
 | `lab2-v1.0` | prima versiune |

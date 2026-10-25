@@ -1,0 +1,5 @@
+{"time":"2026-10-25T11:21:17.894867Z","level":"INFO","msg":"date inițiale încărcate","component":"source","source":"src2","event":"source.seed","employees":4,"file":"webproxy/data/src2.json"}
+{"time":"2026-10-25T11:21:17.895100404Z","level":"INFO","msg":"nod de stocare pornit","component":"source","source":"src2","event":"source.started","addr":"127.0.0.1:9112","proxy":"http://127.0.0.1:9100","format":"json","file":"/tmp/tmp.7J5QjtN4jl/src2.json"}
+{"time":"2026-10-25T11:21:17.968904922Z","level":"INFO","msg":"date trimise la DW","component":"source","source":"src2","event":"source.synced","employees":4,"format":"json"}
+{"time":"2026-10-25T11:21:18.983709838Z","level":"INFO","msg":"modificare aplicată local","component":"source","source":"src2","event":"source.apply","via":"pull","op":"update","id":101,"seq":"32e66ac0-d066-11f1-9485-d065788374fd","dw":"dw1","version":2}
+{"time":"2026-10-25T11:21:22.287801032Z","level":"INFO","msg":"nod de stocare oprit","component":"source","source":"src2","event":"source.stopped"}

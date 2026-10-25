@@ -1,0 +1,36 @@
+# Infrastructura reală pentru Lab 2 (web proxy): o instanță Cassandra comună tuturor
+# nodurilor DW și Redis pentru proxy (cache + registrul conexiunilor).
+# Porturile sunt alese ca să nu se suprapună cu serviciile din 1lab (6379, 8080, 8081).
+name: lab2-webproxy
+
+services:
+  cassandra:
+    image: cassandra:4.1
+    ports: ["127.0.0.1:19042:9042"]
+    environment:
+      CASSANDRA_CLUSTER_NAME: lab2-dw
+      MAX_HEAP_SIZE: 1G
+      HEAP_NEWSIZE: 256M
+    volumes: ["cassandra-data:/var/lib/cassandra"]
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'SELECT release_version FROM system.local' > /dev/null"]
+      interval: 5s
+      timeout: 10s
+      retries: 60
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    # appendonly: Redis persistă datele pe disc (PDF: stocare key-value persistentă)
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["127.0.0.1:16379:6379"]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  cassandra-data:
+  redis-data:
