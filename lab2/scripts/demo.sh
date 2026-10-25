@@ -6,11 +6,12 @@ cd "$(dirname "$0")/.."
 
 export BROKER_ADDR="${BROKER_ADDR:-127.0.0.1:50061}"
 TLS_ADDR=127.0.0.1:50062
+DLQ_ADDR=127.0.0.1:50063
 OUT=docs/evidence
 DATA=$(mktemp -d)
 mkdir -p bin "$OUT"
 rm -f "$OUT"/*.log
-go build -o bin/ ./broker ./sender ./receiver
+go build -o bin/ ./broker ./sender ./receiver ./dlq
 # receiverele demo-ului: 3 reconectări, câte 0.5s, ca scenariul să dureze puțin
 RECV="-retries 3 -interval 500ms -connect-timeout 500ms"
 
@@ -83,7 +84,31 @@ kill "$R2"; sleep 0.3
 bin/receiver -id receiver-2 -unsubscribe >> "$OUT/sender.log" 2>&1
 send -topic news -payload "mesaj 5 (după dezabonarea receiver-2)"
 
-step "10. TLS + token: un broker separat pe $TLS_ADDR"
+step "10. DLQ: broker separat pe $DLQ_ADDR cu MAX_QUEUE=2; receiver-3 e offline și primește 4 mesaje"
+DLQ_DATA=$(mktemp -d)
+dlq_broker() {
+  BROKER_ADDR=$DLQ_ADDR BROKER_DATA_DIR=$DLQ_DATA MAX_QUEUE=2 bin/broker >> "$OUT/broker-dlq.log" 2>&1 & DBP=$!; PIDS+=($DBP)
+  for _ in $(seq 50); do [ "$(grep -c broker.started "$OUT/broker-dlq.log" 2>/dev/null)" -ge "$1" ] && return; sleep 0.1; done
+}
+dlq_broker 1
+bin/receiver -addr $DLQ_ADDR -id receiver-3 -topics news $RECV > "$OUT/receiver-3.log" 2>&1 & R3=$!; PIDS+=($R3)
+sleep 0.5; kill "$R3"; sleep 0.3
+for i in 1 2 3 4; do send -addr $DLQ_ADDR -topic news -payload "dlq $i"; done
+echo "-- dlq: cele mai vechi 2 nu sunt șterse, ci mutate în DLQ" >> "$OUT/sender.log"
+bin/dlq -addr $DLQ_ADDR >> "$OUT/sender.log" 2>&1
+kill -9 "$DBP"; wait "$DBP" 2>/dev/null || true
+echo "-- kill -9 pe broker, repornire: DLQ e refăcută din jurnal" >> "$OUT/sender.log"
+dlq_broker 2
+bin/dlq -addr $DLQ_ADDR >> "$OUT/sender.log" 2>&1
+bin/receiver -addr $DLQ_ADDR -id receiver-3 -topics news $RECV >> "$OUT/receiver-3.log" 2>&1 & R3=$!; PIDS+=($R3)
+sleep 0.5
+echo "-- redrive: mesajele din DLQ revin în coada lui receiver-3 (online) și sunt livrate" >> "$OUT/sender.log"
+bin/dlq -addr $DLQ_ADDR -redrive -receiver receiver-3 >> "$OUT/sender.log" 2>&1
+sleep 0.5
+bin/dlq -addr $DLQ_ADDR >> "$OUT/sender.log" 2>&1
+kill "$R3" "$DBP" 2>/dev/null || true; rm -rf "$DLQ_DATA"
+
+step "11. TLS + token: un broker separat pe $TLS_ADDR"
 ./scripts/certs.sh > /dev/null
 BROKER_ADDR=$TLS_ADDR BROKER_DATA_DIR= BROKER_TOKEN=secret BROKER_TLS_CERT=certs/server.pem BROKER_TLS_KEY=certs/server-key.pem \
   bin/broker > "$OUT/broker-tls.log" 2>&1 & PIDS+=($!)
@@ -95,13 +120,13 @@ send -addr $TLS_ADDR -tls-ca certs/ca.pem -topic news -payload "x" -retries 0
 echo "-- fără TLS:" >> "$OUT/sender.log"
 BROKER_TOKEN=secret send -addr $TLS_ADDR -topic news -payload "x" -retries 0 -timeout 1s
 
-step "11. brokerul se oprește (SIGTERM): receiverele reîncearcă de 3 ori, apoi renunță"
+step "12. brokerul se oprește (SIGTERM): receiverele reîncearcă de 3 ori, apoi renunță"
 kill -TERM "$BP"
 wait "$R1" || echo "receiver-1 s-a oprit cu codul $?" >> "$OUT/sender.log"
 send -topic news -payload "broker oprit" -timeout 500ms -retries 1 -retry-interval 200ms
 
 echo
-for f in receiver-1 receiver-2-before receiver-2-after receiver-2-after-kill9; do
+for f in receiver-1 receiver-2-before receiver-2-after receiver-2-after-kill9 receiver-3; do
   echo "== $f"; grep '^>>>' "$OUT/$f.log" || echo "(nimic)"
 done
 echo

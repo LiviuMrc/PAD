@@ -27,6 +27,7 @@ type Config struct {
 	MaxQueue    int           // mesaje neconfirmate per receiver (implicit 1000)
 	DedupSize   int           // câte messageId-uri ține minte pentru deduplicare (implicit 10000)
 	ReceiverTTL time.Duration // după cât timp offline e uitat un receiver (0 = niciodată)
+	DLQMax      int           // mesaje în coada dead-letter (implicit 10000); peste, se elimină cel mai vechi
 	Journal     *Journal      // nil = stare doar în memorie
 	Now         func() time.Time
 }
@@ -37,6 +38,20 @@ var (
 	errUnsubscribed = errors.New("receiverul s-a dezabonat")
 	errShutdown     = errors.New("brokerul se oprește")
 )
+
+// Motivele pentru care un mesaj ajunge în DLQ.
+const (
+	reasonOverflow = "queue_overflow"   // coada receiverului a depășit MaxQueue
+	reasonExpired  = "receiver_expired" // receiverul a stat offline mai mult de ReceiverTTL
+)
+
+// deadLetter e un mesaj care nu mai putea fi livrat, păstrat în DLQ în loc să fie șters.
+type deadLetter struct {
+	msg      *brokerpb.Message
+	receiver string
+	reason   string
+	at       time.Time
+}
 
 type entry struct {
 	seq uint64 // ordinea globală a publicării (pentru snapshot)
@@ -69,7 +84,9 @@ type Broker struct {
 	subs      map[string]map[string]bool // topic -> receiverId-urile abonate
 	receivers map[string]*receiver
 	seen      *common.Recent[int32] // messageId -> subscribers, pentru deduplicare
+	dlq       []deadLetter          // în ordinea intrării, cel mult DLQMax
 	seq       uint64
+	replaying bool // în timpul refacerii din jurnal nu se loghează evenimentele vechi
 	closed    bool
 	stop      chan struct{}
 }
@@ -81,6 +98,9 @@ func New(cfg Config, log *slog.Logger) (*Broker, error) {
 	}
 	if cfg.DedupSize <= 0 {
 		cfg.DedupSize = 10000
+	}
+	if cfg.DLQMax <= 0 {
+		cfg.DLQMax = 10000
 	}
 	if cfg.Now == nil {
 		cfg.Now = time.Now
@@ -98,11 +118,13 @@ func New(cfg Config, log *slog.Logger) (*Broker, error) {
 		if err != nil {
 			return nil, err
 		}
+		b.replaying = true
 		for i, r := range recs {
 			if err := b.apply(r); err != nil {
 				return nil, fmt.Errorf("jurnal, înregistrarea %d: %w", i+1, err)
 			}
 		}
+		b.replaying = false
 		now := cfg.Now()
 		queued := 0
 		for _, r := range b.receivers {
@@ -110,7 +132,7 @@ func New(cfg Config, log *slog.Logger) (*Broker, error) {
 			queued += len(r.queue)
 		}
 		log.Info("stare refăcută din jurnal", "event", "journal.replay", "records", len(recs),
-			"receivers", len(b.receivers), "queued", queued, "path", cfg.Journal.Path())
+			"receivers", len(b.receivers), "queued", queued, "deadLetters", len(b.dlq), "path", cfg.Journal.Path())
 	}
 	if cfg.ReceiverTTL > 0 {
 		go b.janitor()
@@ -129,11 +151,23 @@ func (b *Broker) apply(r record) error {
 		if err != nil {
 			return err
 		}
-		b.applyPublish(m, r.To, r.Subscribers)
+		b.applyPublish(m, r.To, r.Subscribers, r.at(b.cfg.Now))
 	case opAck:
 		b.applyAck(r.Receiver, r.MessageID)
 	case opUnsubscribe:
 		b.applyUnsubscribe(r.Receiver)
+	case opExpire:
+		b.applyExpire(r.Receiver, r.at(b.cfg.Now))
+	case opDead:
+		m, err := r.message()
+		if err != nil {
+			return err
+		}
+		b.toDLQ(deadLetter{msg: m, receiver: r.Receiver, reason: r.Reason, at: r.at(b.cfg.Now)})
+	case opRedrive:
+		b.applyRedrive(r.Receiver, r.MessageIDs, r.at(b.cfg.Now))
+	case opPurge:
+		b.applyPurge(r.Receiver, r.MessageIDs)
 	case opSeen:
 		for i, id := range r.Seen {
 			b.seen.Add(id, r.SeenSubscribers[i])
@@ -181,33 +215,55 @@ func (b *Broker) applySubscribe(id string, topics []string) int {
 	return purged
 }
 
-// applyPublish pune mesajul în coada fiecărui receiver din to. Întoarce, pe receiver,
-// messageId-ul eliminat când coada a depășit MaxQueue.
-func (b *Broker) applyPublish(m *brokerpb.Message, to []string, subscribers int32) map[string]string {
+// applyPublish pune mesajul în coada fiecărui receiver din to. Când o coadă depășește
+// MaxQueue, cel mai vechi mesaj din ea e mutat în DLQ.
+func (b *Broker) applyPublish(m *brokerpb.Message, to []string, subscribers int32, at time.Time) {
 	b.seq++
 	b.seen.Add(m.MessageId, subscribers)
-	var dropped map[string]string
 	for _, id := range to {
 		r := b.receivers[id]
 		if r == nil {
 			continue
 		}
 		r.queue = append(r.queue, entry{seq: b.seq, msg: m})
-		if len(r.queue) > b.cfg.MaxQueue {
-			if dropped == nil {
-				dropped = map[string]string{}
-			}
-			dropped[id] = r.queue[0].msg.MessageId
-			r.queue[0] = entry{}
-			r.queue = r.queue[1:]
-			if r.sent > 0 {
-				r.sent--
-			}
-		}
+		b.trimQueue(id, r, at)
 	}
-	return dropped
 }
 
+// trimQueue mută în DLQ cele mai vechi mesaje cât timp coada depășește MaxQueue.
+func (b *Broker) trimQueue(id string, r *receiver, at time.Time) {
+	for len(r.queue) > b.cfg.MaxQueue {
+		old := r.queue[0].msg
+		r.queue[0] = entry{}
+		r.queue = r.queue[1:]
+		if r.sent > 0 {
+			r.sent--
+		}
+		b.toDLQ(deadLetter{msg: old, receiver: id, reason: reasonOverflow, at: at})
+	}
+}
+
+// toDLQ adaugă un mesaj în DLQ. Peste DLQMax, cel mai vechi mesaj din DLQ e eliminat
+// definitiv: e singurul loc unde brokerul mai pierde un mesaj și e logat ca eroare.
+func (b *Broker) toDLQ(d deadLetter) {
+	b.dlq = append(b.dlq, d)
+	if !b.replaying {
+		b.log.Warn("mesaj mutat în DLQ", "event", "dlq.add", "reason", d.reason, "receiver", d.receiver,
+			"correlationId", d.msg.CorrelationId, "messageId", d.msg.MessageId, "deadLetters", len(b.dlq))
+	}
+	if len(b.dlq) > b.cfg.DLQMax {
+		ev := b.dlq[0]
+		b.dlq[0] = deadLetter{}
+		b.dlq = b.dlq[1:]
+		if !b.replaying {
+			b.log.Error("DLQ plină, cel mai vechi mesaj din DLQ e eliminat definitiv", "event", "dlq.evict",
+				"receiver", ev.receiver, "messageId", ev.msg.MessageId, "reason", ev.reason, "dlqMax", b.cfg.DLQMax)
+		}
+	}
+}
+
+// applyAck scoate mesajul din coada receiverului. Dacă mesajul fusese deja trimis și apoi
+// mutat în DLQ, receiverul l-a procesat totuși, deci e scos și din DLQ.
 func (b *Broker) applyAck(id, messageID string) bool {
 	r := b.receivers[id]
 	if r == nil {
@@ -222,7 +278,103 @@ func (b *Broker) applyAck(id, messageID string) bool {
 			return true
 		}
 	}
+	if i := b.findDead(id, messageID); i >= 0 {
+		b.dlq = slices.Delete(b.dlq, i, i+1)
+		return true
+	}
 	return false
+}
+
+func (b *Broker) findDead(receiverID, messageID string) int {
+	return slices.IndexFunc(b.dlq, func(d deadLetter) bool {
+		return d.receiver == receiverID && d.msg.MessageId == messageID
+	})
+}
+
+// applyExpire mută coada receiverului în DLQ și îl șterge.
+func (b *Broker) applyExpire(id string, at time.Time) int {
+	r := b.receivers[id]
+	if r == nil {
+		return 0
+	}
+	for _, e := range r.queue {
+		b.toDLQ(deadLetter{msg: e.msg, receiver: id, reason: reasonExpired, at: at})
+	}
+	return b.applyUnsubscribe(id)
+}
+
+// redrivable întoarce messageId-urile din DLQ ale receiverului care pot fi retrimise
+// (din ids, sau toate dacă ids e gol) și câte rămân pentru că topicul lor nu mai e abonat.
+func (b *Broker) redrivable(id string, ids []string) (ok []string, skipped int) {
+	r := b.receivers[id]
+	want := idSet(ids)
+	for _, d := range b.dlq {
+		if d.receiver != id || (want != nil && !want[d.msg.MessageId]) {
+			continue
+		}
+		if slices.Contains(r.topics, d.msg.Topic) {
+			ok = append(ok, d.msg.MessageId)
+		} else {
+			skipped++
+		}
+	}
+	return ok, skipped
+}
+
+// applyRedrive mută mesajele din DLQ la finalul cozii receiverului, în ordinea din DLQ.
+func (b *Broker) applyRedrive(id string, ids []string, at time.Time) int {
+	r := b.receivers[id]
+	if r == nil {
+		return 0
+	}
+	n := 0
+	want := idSet(ids)
+	kept := b.dlq[:0]
+	var moved []*brokerpb.Message
+	for _, d := range b.dlq {
+		if d.receiver == id && want[d.msg.MessageId] {
+			moved = append(moved, d.msg)
+			continue
+		}
+		kept = append(kept, d)
+	}
+	clear(b.dlq[len(kept):])
+	b.dlq = kept
+	for _, m := range moved {
+		b.seq++
+		r.queue = append(r.queue, entry{seq: b.seq, msg: m})
+		n++
+	}
+	b.trimQueue(id, r, at) // dacă acum coada depășește limita, cele mai vechi trec iar în DLQ
+	return n
+}
+
+// idSet face din ids un set, ca filtrarea DLQ să fie O(n), nu O(n×m); nil = fără filtru.
+func idSet(ids []string) map[string]bool {
+	if len(ids) == 0 {
+		return nil
+	}
+	set := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		set[id] = true
+	}
+	return set
+}
+
+// applyPurge șterge din DLQ mesajele receiverului (gol = toate receiverele) din ids (gol = toate).
+func (b *Broker) applyPurge(id string, ids []string) int {
+	want := idSet(ids)
+	kept := b.dlq[:0]
+	for _, d := range b.dlq {
+		if (id == "" || d.receiver == id) && (want == nil || want[d.msg.MessageId]) {
+			continue
+		}
+		kept = append(kept, d)
+	}
+	n := len(b.dlq) - len(kept)
+	clear(b.dlq[len(kept):])
+	b.dlq = kept
+	return n
 }
 
 func (b *Broker) applyUnsubscribe(id string) int {
@@ -316,19 +468,16 @@ func (b *Broker) Publish(ctx context.Context, req *brokerpb.PublishRequest) (*br
 	}
 	sort.Strings(to)
 	reply.Subscribers = int32(len(to))
-	rec, err := publishRecord(m, to, reply.Subscribers)
+	now := b.cfg.Now()
+	rec, err := publishRecord(m, to, reply.Subscribers, now)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if err := b.commit(rec); err != nil {
 		return nil, err
 	}
-	dropped := b.applyPublish(m, to, reply.Subscribers)
+	b.applyPublish(m, to, reply.Subscribers, now) // la coadă plină, cel mai vechi mesaj trece în DLQ
 	b.compact()
-	for id, droppedID := range dropped {
-		b.log.Warn("coada plină, se elimină cel mai vechi mesaj", "event", "queue.overflow",
-			"receiver", id, "droppedMessageId", droppedID)
-	}
 	for _, id := range to {
 		select { // trezește sesiunea receiverului, dacă e online
 		case b.receivers[id].notify <- struct{}{}:
@@ -457,7 +606,8 @@ func (b *Broker) Ack(_ context.Context, req *brokerpb.AckRequest) (*brokerpb.Ack
 	if r == nil {
 		return nil, status.Errorf(codes.NotFound, "receiver necunoscut: %q", req.ReceiverId)
 	}
-	if !slices.ContainsFunc(r.queue, func(e entry) bool { return e.msg.MessageId == req.MessageId }) {
+	if !slices.ContainsFunc(r.queue, func(e entry) bool { return e.msg.MessageId == req.MessageId }) &&
+		b.findDead(req.ReceiverId, req.MessageId) < 0 {
 		return &brokerpb.AckReply{Removed: false}, nil // ACK repetat: nimic de făcut
 	}
 	if err := b.commit(record{Op: opAck, Receiver: req.ReceiverId, MessageID: req.MessageId}); err != nil {
@@ -501,6 +651,97 @@ func (b *Broker) remove(id string, cause error) (int, error) {
 	return dropped, nil
 }
 
+// ---- DLQ ----
+
+func validateIDs(ids []string) error {
+	for _, id := range ids {
+		if err := common.ValidateID("messageId", id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d deadLetter) proto() *brokerpb.DeadLetter {
+	return &brokerpb.DeadLetter{Message: d.msg, ReceiverId: d.receiver, Reason: d.reason,
+		DeadAt: d.at.UTC().Format(time.RFC3339)}
+}
+
+// ListDeadLetters întoarce mesajele din DLQ, cele mai vechi primele.
+func (b *Broker) ListDeadLetters(_ context.Context, req *brokerpb.ListDeadLettersRequest) (*brokerpb.ListDeadLettersReply, error) {
+	if req.ReceiverId != "" {
+		if err := common.ValidateID("receiverId", req.ReceiverId); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	reply := &brokerpb.ListDeadLettersReply{}
+	for _, d := range b.dlq {
+		if req.ReceiverId != "" && d.receiver != req.ReceiverId {
+			continue
+		}
+		reply.Total++
+		if req.Limit <= 0 || len(reply.DeadLetters) < int(req.Limit) {
+			reply.DeadLetters = append(reply.DeadLetters, d.proto())
+		}
+	}
+	return reply, nil
+}
+
+// RedriveDeadLetters mută mesaje din DLQ înapoi în coada receiverului.
+func (b *Broker) RedriveDeadLetters(_ context.Context, req *brokerpb.RedriveRequest) (*brokerpb.RedriveReply, error) {
+	if err := errors.Join(common.ValidateID("receiverId", req.ReceiverId), validateIDs(req.MessageIds)); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	r := b.receivers[req.ReceiverId]
+	if r == nil {
+		return nil, status.Errorf(codes.FailedPrecondition,
+			"receiverul %q nu e abonat; abonează-l întâi (Subscribe), apoi reîncearcă", req.ReceiverId)
+	}
+	ids, skipped := b.redrivable(req.ReceiverId, req.MessageIds)
+	reply := &brokerpb.RedriveReply{Skipped: int32(skipped)}
+	if len(ids) > 0 {
+		now := b.cfg.Now()
+		if err := b.commit(record{Op: opRedrive, Receiver: req.ReceiverId, MessageIDs: ids, At: now.UTC().Format(time.RFC3339Nano)}); err != nil {
+			return nil, err
+		}
+		reply.Redriven = int32(b.applyRedrive(req.ReceiverId, ids, now))
+		b.compact()
+		select { // trezește sesiunea receiverului, dacă e online
+		case r.notify <- struct{}{}:
+		default:
+		}
+	}
+	b.log.Info("mesaje retrimise din DLQ", "event", "dlq.redrive", "receiver", req.ReceiverId,
+		"redriven", reply.Redriven, "skipped", reply.Skipped, "deadLetters", len(b.dlq))
+	return reply, nil
+}
+
+// PurgeDeadLetters șterge definitiv mesaje din DLQ.
+func (b *Broker) PurgeDeadLetters(_ context.Context, req *brokerpb.PurgeDeadLettersRequest) (*brokerpb.PurgeDeadLettersReply, error) {
+	if req.ReceiverId != "" {
+		if err := common.ValidateID("receiverId", req.ReceiverId); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+	if err := validateIDs(req.MessageIds); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if err := b.commit(record{Op: opPurge, Receiver: req.ReceiverId, MessageIDs: req.MessageIds}); err != nil {
+		return nil, err
+	}
+	n := b.applyPurge(req.ReceiverId, req.MessageIds)
+	b.compact()
+	b.log.Info("mesaje șterse din DLQ", "event", "dlq.purge", "receiver", req.ReceiverId, "purged", n,
+		"deadLetters", len(b.dlq))
+	return &brokerpb.PurgeDeadLettersReply{Purged: int32(n)}, nil
+}
+
 // ---- expirarea receiverelor și oprirea ----
 
 // Expire uită receiverele offline de mai mult de ReceiverTTL. Întoarce câte au fost șterse.
@@ -520,13 +761,14 @@ func (b *Broker) Expire() int {
 	sort.Strings(ids)
 	n := 0
 	for _, id := range ids {
-		dropped, err := b.remove(id, errUnsubscribed)
-		if err != nil {
+		if err := b.commit(record{Op: opExpire, Receiver: id, At: now.UTC().Format(time.RFC3339Nano)}); err != nil {
 			break
 		}
+		queued := b.applyExpire(id, now) // mesajele neconfirmate trec în DLQ
+		b.compact()
 		n++
-		b.log.Info("receiver expirat: offline peste TTL, coada lui e ștearsă", "event", "receiver.expired",
-			"receiver", id, "dropped", dropped, "ttl", b.cfg.ReceiverTTL.String())
+		b.log.Info("receiver expirat: offline peste TTL, mesajele lui sunt mutate în DLQ", "event", "receiver.expired",
+			"receiver", id, "deadLettered", queued, "ttl", b.cfg.ReceiverTTL.String())
 	}
 	return n
 }
@@ -575,6 +817,13 @@ func (b *Broker) Online() int {
 		}
 	}
 	return n
+}
+
+// DeadLetters întoarce câte mesaje sunt în DLQ.
+func (b *Broker) DeadLetters() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return len(b.dlq)
 }
 
 // Pending întoarce câte mesaje neconfirmate are receiverul (-1 = receiver necunoscut).

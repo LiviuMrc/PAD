@@ -77,6 +77,9 @@ func TestContractFieldNumbers(t *testing.T) {
 		"AckReply":           {1: "removed"},
 		"UnsubscribeRequest": {1: "receiver_id", 2: "correlation_id"},
 		"UnsubscribeReply":   {1: "dropped"},
+		"DeadLetter":         {1: "message", 2: "receiver_id", 3: "reason", 4: "dead_at"},
+		"RedriveRequest":     {1: "receiver_id", 2: "message_ids"},
+		"RedriveReply":       {1: "redriven", 2: "skipped"},
 	}
 	msgs := map[string]protoreflect.MessageDescriptor{
 		"Message":            (&brokerpb.Message{}).ProtoReflect().Descriptor(),
@@ -87,6 +90,9 @@ func TestContractFieldNumbers(t *testing.T) {
 		"AckReply":           (&brokerpb.AckReply{}).ProtoReflect().Descriptor(),
 		"UnsubscribeRequest": (&brokerpb.UnsubscribeRequest{}).ProtoReflect().Descriptor(),
 		"UnsubscribeReply":   (&brokerpb.UnsubscribeReply{}).ProtoReflect().Descriptor(),
+		"DeadLetter":         (&brokerpb.DeadLetter{}).ProtoReflect().Descriptor(),
+		"RedriveRequest":     (&brokerpb.RedriveRequest{}).ProtoReflect().Descriptor(),
+		"RedriveReply":       (&brokerpb.RedriveReply{}).ProtoReflect().Descriptor(),
 	}
 	for name, fields := range want {
 		d := msgs[name]
@@ -101,7 +107,7 @@ func TestContractFieldNumbers(t *testing.T) {
 		}
 	}
 	svc := brokerpb.File_broker_proto.Services().ByName("Broker")
-	for _, method := range []string{"Publish", "Subscribe", "Ack", "Unsubscribe"} {
+	for _, method := range []string{"Publish", "Subscribe", "Ack", "Unsubscribe", "ListDeadLetters", "RedriveDeadLetters", "PurgeDeadLetters"} {
 		if svc.Methods().ByName(protoreflect.Name(method)) == nil {
 			t.Errorf("lipsește metoda %s", method)
 		}

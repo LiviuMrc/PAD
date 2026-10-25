@@ -1,6 +1,6 @@
-{"time":"2026-10-25T10:06:23.331205599Z","level":"INFO","msg":"broker pornit","component":"broker","event":"broker.started","addr":"127.0.0.1:50062","tls":true,"auth":true,"journal":""}
-{"time":"2026-10-25T10:06:23.835367941Z","level":"INFO","msg":"mesaj publicat","component":"broker","event":"publish","result":"ok","correlationId":"0c0e69b2-49f0-4bc0-b8ba-92945da35e7b","messageId":"316b599a-ace4-4219-a1e8-989e7a101858","topic":"news","subscribers":0,"duration_ms":0}
-{"time":"2026-10-25T10:06:23.841889336Z","level":"WARN","msg":"apel neautentificat","component":"broker","event":"auth","result":"rejected","method":"/broker.v1.Broker/Publish"}
-{"time":"2026-10-25T10:06:29.267147649Z","level":"INFO","msg":"semnal primit","component":"broker","event":"broker.signal","signal":"terminated"}
-{"time":"2026-10-25T10:06:29.267198881Z","level":"INFO","msg":"oprire: health NOT_SERVING","component":"broker","event":"broker.stopping"}
-{"time":"2026-10-25T10:06:29.467937731Z","level":"INFO","msg":"broker oprit","component":"broker","event":"broker.stopped"}
+{"time":"2026-10-25T10:26:49.602556957Z","level":"INFO","msg":"broker pornit","component":"broker","event":"broker.started","addr":"127.0.0.1:50062","tls":true,"auth":true,"journal":""}
+{"time":"2026-10-25T10:26:50.106483353Z","level":"INFO","msg":"mesaj publicat","component":"broker","event":"publish","result":"ok","correlationId":"8012412f-875e-43b2-a526-c6397767d8ad","messageId":"09b32b6a-4eee-4832-936e-2b39d25ad026","topic":"news","subscribers":0,"duration_ms":0}
+{"time":"2026-10-25T10:26:50.112251308Z","level":"WARN","msg":"apel neautentificat","component":"broker","event":"auth","result":"rejected","method":"/broker.v1.Broker/Publish"}
+{"time":"2026-10-25T10:26:55.541871834Z","level":"INFO","msg":"semnal primit","component":"broker","event":"broker.signal","signal":"terminated"}
+{"time":"2026-10-25T10:26:55.541945691Z","level":"INFO","msg":"oprire: health NOT_SERVING","component":"broker","event":"broker.stopping"}
+{"time":"2026-10-25T10:26:55.742684918Z","level":"INFO","msg":"broker oprit","component":"broker","event":"broker.stopped"}

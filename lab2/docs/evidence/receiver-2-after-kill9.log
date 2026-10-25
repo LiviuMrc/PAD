@@ -1,4 +1,4 @@
-{"time":"2026-10-25T10:06:21.481384139Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-2","event":"subscribe","result":"ok","topics":["news","alerts"],"correlationId":"242b5a2e-8cb1-457e-a961-5630d0fd8365"}
+{"time":"2026-10-25T10:26:45.664828129Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-2","event":"subscribe","result":"ok","topics":["news","alerts"],"correlationId":"c330eb74-a650-45bc-af9f-b12d73b8b8a9"}
 >>> [grpc] alerts de la sender-1: mesaj 4 (înainte de kill -9)
-{"time":"2026-10-25T10:06:21.48161618Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"b74f1489-190c-4d61-8fc6-60f65a0487c6","messageId":"4b64490f-aeb5-46e9-822b-9c31c7dade34","topic":"alerts"}
-{"time":"2026-10-25T10:06:22.979218843Z","level":"INFO","msg":"receiver oprit","component":"receiver","receiver":"receiver-2","event":"receiver.stopped"}
+{"time":"2026-10-25T10:26:45.664947318Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"90afc2a4-508f-467a-9953-73ddc852f44c","messageId":"9269295f-d542-44b8-b97f-513cb5cff663","topic":"alerts"}
+{"time":"2026-10-25T10:26:47.162312111Z","level":"INFO","msg":"receiver oprit","component":"receiver","receiver":"receiver-2","event":"receiver.stopped"}

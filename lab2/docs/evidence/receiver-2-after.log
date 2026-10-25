@@ -1,12 +1,12 @@
-{"time":"2026-10-25T10:06:20.524238361Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-2","event":"subscribe","result":"ok","topics":["news","alerts"],"correlationId":"ed695084-d71d-4591-b50d-c1e8557fa6d0"}
+{"time":"2026-10-25T10:26:44.707117983Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-2","event":"subscribe","result":"ok","topics":["news","alerts"],"correlationId":"bc7a73dd-c649-4c95-b6d3-f71b4541206b"}
 >>> [grpc] news de la sender-1: mesaj 2 (receiver-2 offline)
-{"time":"2026-10-25T10:06:20.524385362Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"8a2bcce9-07e5-491f-8e24-4b7bbb92ca01","messageId":"479ccd17-e18c-4b96-bc36-a906fdabd79f","topic":"news"}
+{"time":"2026-10-25T10:26:44.707223826Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"51a92965-6476-4d12-ba56-d212decefcea","messageId":"96bcc3f5-7db6-48a2-a827-77998d4ac95b","topic":"news"}
 >>> [grpc] alerts de la sender-1: mesaj 3 (alerts, receiver-2 offline)
-{"time":"2026-10-25T10:06:20.525920544Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"c1e3d733-3217-4fae-a5a2-7597fec52831","messageId":"669ee9ae-e355-49d0-b9ce-796921859fdd","topic":"alerts"}
+{"time":"2026-10-25T10:26:44.709358892Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"e93ddaf6-b808-4358-a16e-70289df08aef","messageId":"7cfb43ca-83d4-4948-9b11-526cf14a43a5","topic":"alerts"}
 >>> [grpc] news de la sender-1: json demo
-{"time":"2026-10-25T10:06:21.039997181Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"2eba6848-5999-4421-a1c5-e19e91a1ad82","messageId":"aeb1c516-d967-43ea-be3a-c55a002209e5","topic":"news"}
+{"time":"2026-10-25T10:26:45.221260822Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"23f28919-862e-4826-b85d-b2577674e132","messageId":"0bcad367-af30-4a70-99f3-6b55b8c0b0de","topic":"news"}
 >>> [grpc] news de la sender-1: trimis pe fir ca JSON
-{"time":"2026-10-25T10:06:21.044697218Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"5613f1a7-90f0-4f79-9e18-66ffabb4366c","messageId":"8decde74-9885-4e30-aaf8-f0e846933373","topic":"news"}
+{"time":"2026-10-25T10:26:45.226801356Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"180c415c-95ee-4987-8a23-2e9b67bb9b29","messageId":"e12c9666-0456-44eb-b1a3-9adb61912ac3","topic":"news"}
 >>> [grpc] news de la curl: trimis cu curl
-{"time":"2026-10-25T10:06:21.055141111Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"705869e6-4fcc-428d-a627-5acf52fdc56f","messageId":"e437978c-277c-4c4d-8da2-dc2883cb45c7","topic":"news"}
-{"time":"2026-10-25T10:06:21.05867431Z","level":"INFO","msg":"receiver oprit","component":"receiver","receiver":"receiver-2","event":"receiver.stopped"}
+{"time":"2026-10-25T10:26:45.23929213Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"11684bfa-6a89-4662-b364-670a8124103e","messageId":"0fca7cea-1aa6-487e-ae62-10f7e90f9916","topic":"news"}
+{"time":"2026-10-25T10:26:45.243873204Z","level":"INFO","msg":"receiver oprit","component":"receiver","receiver":"receiver-2","event":"receiver.stopped"}

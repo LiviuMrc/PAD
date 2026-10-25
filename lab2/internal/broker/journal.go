@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -25,7 +26,11 @@ const (
 	opPublish     = "pub"
 	opAck         = "ack"
 	opUnsubscribe = "unsub"
-	opSeen        = "seen" // messageId-urile ținute minte pentru deduplicare (doar în snapshot)
+	opSeen        = "seen"    // messageId-urile ținute minte pentru deduplicare (doar în snapshot)
+	opExpire      = "expire"  // receiver offline peste TTL: coada lui trece în DLQ
+	opDead        = "dead"    // un mesaj din DLQ (doar în snapshot)
+	opRedrive     = "redrive" // mesaje mutate din DLQ înapoi în coada receiverului
+	opPurge       = "purge"   // mesaje șterse din DLQ
 )
 
 type record struct {
@@ -38,14 +43,25 @@ type record struct {
 	MessageID       string          `json:"messageId,omitempty"`
 	Seen            []string        `json:"seen,omitempty"`
 	SeenSubscribers []int32         `json:"seenSubscribers,omitempty"`
+	Reason          string          `json:"reason,omitempty"`
+	MessageIDs      []string        `json:"messageIds,omitempty"`
+	At              string          `json:"at,omitempty"` // momentul operației, UTC (pentru dead_at)
 }
 
-func publishRecord(m *brokerpb.Message, to []string, subscribers int32) (record, error) {
+// at întoarce momentul operației; jurnalele mai vechi nu îl au, deci se folosește acum.
+func (r record) at(now func() time.Time) time.Time {
+	if t, err := time.Parse(time.RFC3339Nano, r.At); err == nil {
+		return t
+	}
+	return now()
+}
+
+func publishRecord(m *brokerpb.Message, to []string, subscribers int32, at time.Time) (record, error) {
 	js, err := protojson.Marshal(m)
 	if err != nil {
 		return record{}, err
 	}
-	return record{Op: opPublish, Msg: js, To: to, Subscribers: subscribers}, nil
+	return record{Op: opPublish, Msg: js, To: to, Subscribers: subscribers, At: at.UTC().Format(time.RFC3339Nano)}, nil
 }
 
 func (r record) message() (*brokerpb.Message, error) {
@@ -203,8 +219,8 @@ func (j *Journal) Close() error {
 }
 
 // snapshot descrie starea curentă ca înregistrări minime (cu mu luat): messageId-urile
-// pentru deduplicare, abonările, apoi mesajele neconfirmate în ordinea publicării,
-// fiecare cu receiverele care încă îl au în coadă.
+// pentru deduplicare, abonările, mesajele neconfirmate în ordinea publicării (fiecare cu
+// receiverele care încă îl au în coadă), apoi DLQ-ul, în ordine.
 func (b *Broker) snapshot() []record {
 	var recs []record
 	if keys := b.seen.Keys(); len(keys) > 0 {
@@ -247,16 +263,25 @@ func (b *Broker) snapshot() []record {
 		if !ok {
 			n = int32(len(p.to))
 		}
-		rec, err := publishRecord(p.msg, p.to, n)
+		rec, err := publishRecord(p.msg, p.to, n, time.Time{})
 		if err == nil {
+			rec.At = "" // în snapshot cozile nu depășesc MaxQueue, deci momentul nu contează
 			recs = append(recs, rec)
 		}
+	}
+	for _, d := range b.dlq {
+		js, err := protojson.Marshal(d.msg)
+		if err != nil {
+			continue
+		}
+		recs = append(recs, record{Op: opDead, Receiver: d.receiver, Reason: d.reason, Msg: js,
+			At: d.at.UTC().Format(time.RFC3339Nano)})
 	}
 	return recs
 }
 
 func (b *Broker) liveSize() int {
-	n := 1 + len(b.receivers)
+	n := 1 + len(b.receivers) + len(b.dlq)
 	for _, r := range b.receivers {
 		n += len(r.queue)
 	}

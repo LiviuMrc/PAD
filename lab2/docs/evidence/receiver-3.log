@@ -1,0 +1,12 @@
+{"time":"2026-10-25T10:26:47.594376999Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-3","event":"subscribe","result":"ok","topics":["news"],"correlationId":"5f1d725c-09c7-4424-8d8d-f9402d4e3861"}
+{"time":"2026-10-25T10:26:48.09012948Z","level":"INFO","msg":"receiver oprit","component":"receiver","receiver":"receiver-3","event":"receiver.stopped"}
+{"time":"2026-10-25T10:26:48.546339705Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-3","event":"subscribe","result":"ok","topics":["news"],"correlationId":"a0d1ae5e-251e-4de0-a370-2bf9baecebee"}
+>>> [grpc] news de la sender-1: dlq 3
+{"time":"2026-10-25T10:26:48.546449728Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-3","event":"receive","result":"ok","correlationId":"0d678944-1bbe-47eb-9c41-57fcd71b52b2","messageId":"4fe30b2e-0698-4ad1-b6d0-a0e3897b13dd","topic":"news"}
+>>> [grpc] news de la sender-1: dlq 4
+{"time":"2026-10-25T10:26:48.548060062Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-3","event":"receive","result":"ok","correlationId":"6ca7cf1e-2598-472b-912d-7f3291f07434","messageId":"660a743e-c5b0-4072-be2c-a7daa03b2bf8","topic":"news"}
+>>> [grpc] news de la sender-1: dlq 1
+{"time":"2026-10-25T10:26:49.048986632Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-3","event":"receive","result":"ok","correlationId":"1ec537ca-0bab-4ae5-9924-c10d8be71f2d","messageId":"148e9a09-db85-4de0-88e9-e7256e385646","topic":"news"}
+>>> [grpc] news de la sender-1: dlq 2
+{"time":"2026-10-25T10:26:49.051540183Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-3","event":"receive","result":"ok","correlationId":"04ba2fe1-c5c7-4b2d-8783-5c8abca2ba4b","messageId":"bd309271-98d5-41e8-811c-c6af85e1af5c","topic":"news"}
+{"time":"2026-10-25T10:26:49.556977459Z","level":"INFO","msg":"receiver oprit","component":"receiver","receiver":"receiver-3","event":"receiver.stopped"}

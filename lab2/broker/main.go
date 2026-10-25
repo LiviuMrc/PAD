@@ -21,14 +21,15 @@ func main() {
 	dataDir := flag.String("data", common.EnvAllowEmpty("BROKER_DATA_DIR", "data"), "director pentru jurnal (gol = fără persistență)")
 	fsync := flag.Bool("fsync", common.EnvBool("BROKER_FSYNC", true), "fsync după fiecare scriere în jurnal")
 	ttl := flag.Duration("ttl", time.Duration(common.EnvInt("RECEIVER_TTL_SEC", 600))*time.Second, "după cât timp offline e uitat un receiver (0 = niciodată)")
-	maxQueue := flag.Int("max-queue", common.EnvInt("MAX_QUEUE", 1000), "mesaje neconfirmate per receiver")
+	maxQueue := flag.Int("max-queue", common.EnvInt("MAX_QUEUE", 1000), "mesaje neconfirmate per receiver; peste, cel mai vechi trece în DLQ")
+	dlqMax := flag.Int("dlq-max", common.EnvInt("DLQ_MAX", 10000), "mesaje în coada dead-letter")
 	cert := flag.String("tls-cert", common.Env("BROKER_TLS_CERT", ""), "certificat TLS (PEM)")
 	key := flag.String("tls-key", common.Env("BROKER_TLS_KEY", ""), "cheia TLS (PEM)")
 	drain := flag.Duration("drain", time.Duration(common.EnvInt("SHUTDOWN_DRAIN_MS", 200))*time.Millisecond, "cât timp e NOT_SERVING înainte de oprire")
 	flag.Parse()
 
 	srv, err := broker.NewServer(broker.ServerConfig{
-		Broker:     broker.Config{MaxQueue: *maxQueue, ReceiverTTL: *ttl},
+		Broker:     broker.Config{MaxQueue: *maxQueue, DLQMax: *dlqMax, ReceiverTTL: *ttl},
 		DataDir:    *dataDir,
 		Fsync:      *fsync,
 		Token:      common.Env("BROKER_TOKEN", ""), // doar din mediu, ca să nu apară în lista de procese

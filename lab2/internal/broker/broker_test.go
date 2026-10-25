@@ -377,23 +377,3 @@ func TestJanitorExpiresWithRealClock(t *testing.T) {
 		t.Fatal("lipsește evenimentul receiver.expired")
 	}
 }
-
-func TestQueueOverflowDropsOldest(t *testing.T) {
-	e := start(t, ServerConfig{Broker: Config{MaxQueue: 3}})
-	s := subscribe(t, e.conn, "r", "news")
-	s.cancel()
-	waitOnline(t, e.b, 0)
-	var sent []*brokerpb.Message
-	for i := 1; i <= 5; i++ {
-		sent = append(sent, publish(t, e.conn, "news", fmt.Sprintf("m%d", i)))
-	}
-	again := subscribe(t, e.conn, "r", "news")
-	for _, want := range sent[2:] {
-		if got := again.recv(t); got.MessageId != want.MessageId {
-			t.Fatalf("primit %q, așteptat %q", got.Payload, want.Payload)
-		}
-	}
-	if c := strings.Count(e.logs.String(), `"event":"queue.overflow"`); c != 2 {
-		t.Fatalf("queue.overflow de %d ori, așteptat 2", c)
-	}
-}

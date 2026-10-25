@@ -59,12 +59,52 @@ message UnsubscribeReply {
   int32 dropped = 1;          // mesaje neconfirmate șterse odată cu coada
 }
 
+// DeadLetter este un mesaj care nu mai putea fi livrat și a fost mutat în coada dead-letter (DLQ)
+// în loc să fie șters.
+message DeadLetter {
+  Message message = 1;
+  string receiver_id = 2;     // coada din care a ieșit
+  string reason = 3;          // "queue_overflow" (coada a depășit limita) sau "receiver_expired" (offline peste TTL)
+  string dead_at = 4;         // UTC, RFC3339
+}
+
+message ListDeadLettersRequest {
+  string receiver_id = 1;     // gol = toate
+  int32 limit = 2;            // 0 = toate
+}
+
+message ListDeadLettersReply {
+  repeated DeadLetter dead_letters = 1; // cele mai vechi primele
+  int32 total = 2;            // câte corespund filtrului (pot fi mai multe decât limit)
+}
+
+// RedriveRequest mută mesaje din DLQ înapoi la finalul cozii receiverului, ca să fie livrate din nou.
+message RedriveRequest {
+  string receiver_id = 1;     // obligatoriu; receiverul trebuie să fie abonat
+  repeated string message_ids = 2; // gol = toate mesajele din DLQ ale receiverului
+}
+
+message RedriveReply {
+  int32 redriven = 1;
+  int32 skipped = 2;          // rămase în DLQ: topicul lor nu mai e în abonarea receiverului
+}
+
+message PurgeDeadLettersRequest {
+  string receiver_id = 1;     // gol = toate receiverele
+  repeated string message_ids = 2; // gol = toate
+}
+
+message PurgeDeadLettersReply {
+  int32 purged = 1;
+}
+
 // Erorile fac parte din contract (coduri gRPC standard):
 //  INVALID_ARGUMENT   mesaj sau cerere care nu respectă regulile de validare (nu se reîncearcă)
 //  DEADLINE_EXCEEDED  termenul apelului a expirat; brokerul nu mai pune mesajul în cozi
 //  UNAVAILABLE        brokerul nu rulează sau se oprește (se reîncearcă)
 //  UNAUTHENTICATED    lipsește tokenul sau e greșit (nu se reîncearcă)
 //  NOT_FOUND          Ack/Unsubscribe pentru un receiver_id necunoscut
+//  FAILED_PRECONDITION RedriveDeadLetters pentru un receiver care nu e abonat
 //  CANCELED           sesiunea Subscribe a fost închisă: alt Subscribe cu același receiver_id
 //                     a preluat coada, sau receiverul s-a dezabonat
 service Broker {
@@ -81,5 +121,12 @@ service Broker {
   rpc Ack(AckRequest) returns (AckReply);
 
   // Unsubscribe șterge abonarea și coada receiverului și închide sesiunea lui activă.
+  // Mesajele neconfirmate sunt șterse (dezabonarea e cerută explicit), nu mutate în DLQ.
   rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeReply);
+
+  // DLQ: mesajele eliminate când coada unui receiver depășește limita sau când un receiver
+  // offline expiră. Ack pe un mesaj din DLQ (deja trimis înainte de mutare) îl scoate și de acolo.
+  rpc ListDeadLetters(ListDeadLettersRequest) returns (ListDeadLettersReply);
+  rpc RedriveDeadLetters(RedriveRequest) returns (RedriveReply);
+  rpc PurgeDeadLetters(PurgeDeadLettersRequest) returns (PurgeDeadLettersReply);
 }

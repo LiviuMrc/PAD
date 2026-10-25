@@ -8,3 +8,6 @@
 /certs/
 *.test
 .env
+
+# webproxy: datele locale ale nodurilor de stocare
+/webproxy/var/

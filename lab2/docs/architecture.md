@@ -12,7 +12,11 @@ flowchart LR
         J --> R["rutare: topic → abonați"]
         R --> Q1[coada receiver-1]
         R --> Q2[coada receiver-2]
+        Q1 -. "coadă plină / receiver expirat" .-> D[(DLQ)]
+        Q2 -.-> D
+        D -. "RedriveDeadLetters" .-> Q1
     end
+    A[dlq] -- "List / Redrive / Purge" --> D
     R1[receiver-1] -- "rpc Subscribe / rpc Ack" --> B
     R2[receiver-2] -- "rpc Subscribe / rpc Ack" --> B
     Q1 -- "stream Message" --> R1
@@ -47,6 +51,7 @@ flowchart LR
 | confirmarea livrării | nu există | `Ack` de la receiver; până atunci mesajul rămâne în coadă (at-least-once) |
 | confirmarea abonării | mesaj `ACK` | header-ul stream-ului (`stream.Header()`) |
 | persistență | nu | jurnal append-only cu fsync, refăcut la pornire |
+| coadă plină | cel mai vechi mesaj e șters | cel mai vechi mesaj trece în DLQ, de unde poate fi retrimis |
 | concurență | o goroutine per conexiune, creată manual | gRPC rulează fiecare apel în propria goroutine |
 | deadline | `SetReadDeadline` pe socket | `context.WithTimeout`, propagat automat la server (brokerul îl verifică) |
 | health check | endpoint HTTP | serviciul standard `grpc.health.v1.Health` (+ reflection pentru grpcurl) |
@@ -60,12 +65,13 @@ flowchart LR
 | contract | `contracts/broker.proto` | mesajele, serviciul `Broker` și semantica erorilor |
 | cod generat | `gen/brokerpb/` (nu e în git) | creat de `./scripts/gen.sh` |
 | comun | `common/` | validare, `.env`, logger, codec JSON, conectarea clienților (TLS, token, `WaitReady`) |
-| broker (logică) | `internal/broker/broker.go` | `Publish`, `Subscribe`, `Ack`, `Unsubscribe`, cozi, deduplicare, TTL |
+| broker (logică) | `internal/broker/broker.go` | `Publish`, `Subscribe`, `Ack`, `Unsubscribe`, cozi, DLQ, deduplicare, TTL |
 | jurnal | `internal/broker/journal.go` | scriere cu fsync, refacere, tăierea liniei incomplete, compactare |
 | server | `internal/broker/server.go` | gRPC + health + reflection, autentificare, TLS, oprire ordonată |
 | broker (proces) | `broker/main.go` | citește configurarea și pornește `internal/broker.Server` |
 | sender | `sender/main.go` | apelează `Publish` cu deadline; reîncearcă cu același `message_id` |
 | receiver | `receiver/main.go` | `Subscribe`, procesare, `Ack`; ignoră retrimiterile; se reconectează limitat |
+| dlq | `dlq/main.go` | listează, retrimite (`-redrive`) sau șterge (`-purge`) mesajele din DLQ |
 
 ## Starea unui receiver în broker
 
@@ -79,6 +85,16 @@ queue:  [ m1 | m2 | m3 | m4 ]      mesaje neconfirmate, în ordinea publicării
 - Un `Subscribe` nou (reconectare sau preluare) pune `sent = 0`, deci m1 și m2 se retrimit.
 - Doar sesiunea curentă (ultimul `Subscribe`) poate avansa cursorul.
 - Un `Subscribe` cu alte topicuri le înlocuiește pe cele vechi și șterge din coadă mesajele lor.
+- Când coada depășește `MAX_QUEUE`, `m1` (cel mai vechi) trece în DLQ cu motivul `queue_overflow`.
+  Dacă fusese deja trimis și receiverul îl confirmă ulterior, `Ack` îl scoate și din DLQ.
+
+## Dead-letter queue
+
+DLQ e o listă comună tuturor receiverelor, în ordinea intrării, cu `receiver_id`, motiv și
+`dead_at` pentru fiecare mesaj. Fiecare operație (`expire`, `redrive`, `purge`, plus mutările
+făcute de `pub`) e scrisă în jurnal, iar momentul mutării e salvat, deci după repornire DLQ e
+identică. `RedriveDeadLetters` pune mesajele la finalul cozii receiverului, în ordinea din DLQ.
+DLQ are limita `DLQ_MAX`; peste ea, cel mai vechi mesaj din DLQ e eliminat (log `ERROR`, `dlq.evict`).
 
 ## Oprirea brokerului (SIGTERM)
 

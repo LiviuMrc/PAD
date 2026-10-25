@@ -184,7 +184,7 @@ func TestReadsDotEnv(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if !strings.Contains(p.output(), `"event":"queue.overflow"`) {
+	if !strings.Contains(p.output(), `"event":"dlq.add"`) {
 		t.Fatalf("MAX_QUEUE din mediu nu a fost aplicat:\n%s", p.output())
 	}
 }

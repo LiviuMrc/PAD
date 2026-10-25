@@ -1,5 +1,5 @@
-{"time":"2026-10-25T10:06:19.703782823Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-2","event":"subscribe","result":"ok","topics":["news","alerts"],"correlationId":"6f857cc1-9390-4c89-bf30-032466a49bb3"}
+{"time":"2026-10-25T10:26:43.883227196Z","level":"INFO","msg":"abonare confirmată","component":"receiver","receiver":"receiver-2","event":"subscribe","result":"ok","topics":["news","alerts"],"correlationId":"d38ac315-f277-4566-b87f-b17d95867a26"}
 >>> [grpc] news de la sender-1: mesaj 1 (ambii online)
-{"time":"2026-10-25T10:06:20.2011101Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"956507a3-ade7-4002-8931-5b9fa82e9801","messageId":"51bb9186-4c21-49ac-8d0e-29437f382d44","topic":"news"}
-{"time":"2026-10-25T10:06:20.202778149Z","level":"WARN","msg":"confirmare eșuată, mesajul va fi retrimis","component":"receiver","receiver":"receiver-2","event":"ack","result":"failed","messageId":"51bb9186-4c21-49ac-8d0e-29437f382d44","code":"Canceled"}
-{"time":"2026-10-25T10:06:20.202810835Z","level":"INFO","msg":"receiver oprit","component":"receiver","receiver":"receiver-2","event":"receiver.stopped"}
+{"time":"2026-10-25T10:26:44.382915746Z","level":"INFO","msg":"mesaj primit","component":"receiver","receiver":"receiver-2","event":"receive","result":"ok","correlationId":"2347a769-d7ad-4ff4-975e-03e35aa7e673","messageId":"81cfbcf0-d468-4de0-8a0c-cb4fdf499362","topic":"news"}
+{"time":"2026-10-25T10:26:44.384462736Z","level":"WARN","msg":"confirmare eșuată, mesajul va fi retrimis","component":"receiver","receiver":"receiver-2","event":"ack","result":"failed","messageId":"81cfbcf0-d468-4de0-8a0c-cb4fdf499362","code":"Canceled"}
+{"time":"2026-10-25T10:26:44.384503247Z","level":"INFO","msg":"receiver oprit","component":"receiver","receiver":"receiver-2","event":"receiver.stopped"}

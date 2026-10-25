@@ -1,46 +1,62 @@
 ### 1. Publish cu ambele receivere online
-{"time":"2026-10-25T10:06:20.20107734Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"956507a3-ade7-4002-8931-5b9fa82e9801","messageId":"51bb9186-4c21-49ac-8d0e-29437f382d44","topic":"news","subscribers":2,"duplicate":false,"attempt":1,"duration_ms":3}
+{"time":"2026-10-25T10:26:44.382924727Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"2347a769-d7ad-4ff4-975e-03e35aa7e673","messageId":"81cfbcf0-d468-4de0-8a0c-cb4fdf499362","topic":"news","subscribers":2,"duplicate":false,"attempt":1,"duration_ms":3}
 ### 2. injectarea eșecului: receiver-2 este oprit
 ### 3. Publish cât timp receiver-2 e offline
-{"time":"2026-10-25T10:06:20.511133945Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"8a2bcce9-07e5-491f-8e24-4b7bbb92ca01","messageId":"479ccd17-e18c-4b96-bc36-a906fdabd79f","topic":"news","subscribers":2,"duplicate":false,"attempt":1,"duration_ms":3}
-{"time":"2026-10-25T10:06:20.516937262Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"c1e3d733-3217-4fae-a5a2-7597fec52831","messageId":"669ee9ae-e355-49d0-b9ce-796921859fdd","topic":"alerts","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":2}
+{"time":"2026-10-25T10:26:44.694208934Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"51a92965-6476-4d12-ba56-d212decefcea","messageId":"96bcc3f5-7db6-48a2-a827-77998d4ac95b","topic":"news","subscribers":2,"duplicate":false,"attempt":1,"duration_ms":4}
+{"time":"2026-10-25T10:26:44.700277971Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"e93ddaf6-b808-4358-a16e-70289df08aef","messageId":"7cfb43ca-83d4-4948-9b11-526cf14a43a5","topic":"alerts","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":2}
 ### 4. recuperarea: receiver-2 repornește cu același id și primește mesajele neconfirmate
 ### 5. validare: schemaVersion 2.0 și topic invalid sunt respinse (INVALID_ARGUMENT, fără reîncercări)
-{"time":"2026-10-25T10:06:21.024896998Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"InvalidArgument","correlationId":"982cef98-df50-4631-8c48-72f53785b0d7","messageId":"aa9a1e75-a699-40c1-ab36-64dd6fa19cc8","error":"schemaVersion nesuportat: \"2.0\" (suportat: 1.0)","attempt":1,"duration_ms":1}
-{"time":"2026-10-25T10:06:21.029564057Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"InvalidArgument","correlationId":"aded226c-a898-4500-aa8f-c794024f36f3","messageId":"364430e8-449e-4e73-b443-e0bc613f4f5c","error":"topic invalid: \"topic invalid\"","attempt":1,"duration_ms":1}
+{"time":"2026-10-25T10:26:45.209558218Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"InvalidArgument","correlationId":"092f1777-8158-4b11-ab6a-6561cb7674dd","messageId":"d9b16848-781a-4817-9b26-d7ff9785e7ed","error":"schemaVersion nesuportat: \"2.0\" (suportat: 1.0)","attempt":1,"duration_ms":2}
+{"time":"2026-10-25T10:26:45.214582741Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"InvalidArgument","correlationId":"b9bfb548-204d-4815-bb2b-d043d95ca8eb","messageId":"257cd52e-a595-460d-a19e-5ad687bef340","error":"topic invalid: \"topic invalid\"","attempt":1,"duration_ms":0}
 ### 6. același mesaj în format proto (text) și JSON; apoi trimis pe fir ca JSON (-codec json)
-proto: message_id: "aeb1c516-d967-43ea-be3a-c55a002209e5"
-correlation_id: "2eba6848-5999-4421-a1c5-e19e91a1ad82"
-schema_version: "1.0"
-occurred_at: "2026-10-25T10:06:21Z"
-sender: "sender-1"
-topic: "news"
-payload: "json demo"
+proto: message_id:  "0bcad367-af30-4a70-99f3-6b55b8c0b0de"
+correlation_id:  "23f28919-862e-4826-b85d-b2577674e132"
+schema_version:  "1.0"
+occurred_at:  "2026-10-25T10:26:45Z"
+sender:  "sender-1"
+topic:  "news"
+payload:  "json demo"
 
-JSON : {"messageId":"aeb1c516-d967-43ea-be3a-c55a002209e5","correlationId":"2eba6848-5999-4421-a1c5-e19e91a1ad82","schemaVersion":"1.0","occurredAt":"2026-10-25T10:06:21Z","sender":"sender-1","topic":"news","payload":"json demo"}
-{"time":"2026-10-25T10:06:21.039981287Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"2eba6848-5999-4421-a1c5-e19e91a1ad82","messageId":"aeb1c516-d967-43ea-be3a-c55a002209e5","topic":"news","subscribers":2,"duplicate":false,"attempt":1,"duration_ms":6}
-{"time":"2026-10-25T10:06:21.044785145Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"5613f1a7-90f0-4f79-9e18-66ffabb4366c","messageId":"8decde74-9885-4e30-aaf8-f0e846933373","topic":"news","subscribers":2,"duplicate":false,"attempt":1,"duration_ms":2}
+JSON : {"messageId":"0bcad367-af30-4a70-99f3-6b55b8c0b0de", "correlationId":"23f28919-862e-4826-b85d-b2577674e132", "schemaVersion":"1.0", "occurredAt":"2026-10-25T10:26:45Z", "sender":"sender-1", "topic":"news", "payload":"json demo"}
+{"time":"2026-10-25T10:26:45.2213217Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"23f28919-862e-4826-b85d-b2577674e132","messageId":"0bcad367-af30-4a70-99f3-6b55b8c0b0de","topic":"news","subscribers":2,"duplicate":false,"attempt":1,"duration_ms":3}
+{"time":"2026-10-25T10:26:45.226949133Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"180c415c-95ee-4987-8a23-2e9b67bb9b29","messageId":"e12c9666-0456-44eb-b1a3-9adb61912ac3","topic":"news","subscribers":2,"duplicate":false,"attempt":1,"duration_ms":2}
 ### 7. client independent: curl face un apel gRPC cu corp JSON (application/grpc+json)
 $ curl --http2-prior-knowledge -H 'content-type: application/grpc+json' http://127.0.0.1:50061/broker.v1.Broker/Publish
-cerere: {"message":{"messageId":"e437978c-277c-4c4d-8da2-dc2883cb45c7","correlationId":"705869e6-4fcc-428d-a627-5acf52fdc56f","schemaVersion":"1.0","occurredAt":"2026-10-25T10:06:21Z","sender":"curl","topic":"news","payload":"trimis cu curl"}}
-răspuns: {"messageId":"e437978c-277c-4c4d-8da2-dc2883cb45c7", "correlationId":"705869e6-4fcc-428d-a627-5acf52fdc56f", "subscribers":2}
+cerere: {"message":{"messageId":"0fca7cea-1aa6-487e-ae62-10f7e90f9916","correlationId":"11684bfa-6a89-4662-b364-670a8124103e","schemaVersion":"1.0","occurredAt":"2026-10-25T10:26:45Z","sender":"curl","topic":"news","payload":"trimis cu curl"}}
+răspuns: {"messageId":"0fca7cea-1aa6-487e-ae62-10f7e90f9916", "correlationId":"11684bfa-6a89-4662-b364-670a8124103e", "subscribers":2}
 HTTP/2 200 
 content-type: application/grpc+json
 grpc-status: 0
 ### 8. kill -9 pe broker cu receiver-2 offline: mesajul confirmat e deja în jurnal
-{"time":"2026-10-25T10:06:21.368122242Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"b74f1489-190c-4d61-8fc6-60f65a0487c6","messageId":"4b64490f-aeb5-46e9-822b-9c31c7dade34","topic":"alerts","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":5}
+{"time":"2026-10-25T10:26:45.550477962Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"90afc2a4-508f-467a-9953-73ddc852f44c","messageId":"9269295f-d542-44b8-b97f-513cb5cff663","topic":"alerts","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":2}
 brokerul a fost omorât cu SIGKILL
 ### 9. dezabonare: receiver-2 iese, iar coada lui e ștearsă (news mai are un singur abonat)
-{"time":"2026-10-25T10:06:23.287001723Z","level":"INFO","msg":"dezabonat","component":"receiver","receiver":"receiver-2","event":"unsubscribe","result":"ok","dropped":0}
-{"time":"2026-10-25T10:06:23.293047038Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"ee65ec68-6763-424d-a960-5162f33930f0","messageId":"ed478984-0318-4dc0-b4c0-9b1980cb30ee","topic":"news","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":2}
-### 10. TLS + token: un broker separat pe 127.0.0.1:50062
+{"time":"2026-10-25T10:26:47.471523766Z","level":"INFO","msg":"dezabonat","component":"receiver","receiver":"receiver-2","event":"unsubscribe","result":"ok","dropped":0}
+{"time":"2026-10-25T10:26:47.478742971Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"8a002f66-0bdf-4496-ace7-e501175545ad","messageId":"678d92d4-d974-4ea3-9c14-81747e75fffe","topic":"news","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":3}
+### 10. DLQ: broker separat pe 127.0.0.1:50063 cu MAX_QUEUE=2; receiver-3 e offline și primește 4 mesaje
+{"time":"2026-10-25T10:26:48.398783277Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"1ec537ca-0bab-4ae5-9924-c10d8be71f2d","messageId":"148e9a09-db85-4de0-88e9-e7256e385646","topic":"news","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":3}
+{"time":"2026-10-25T10:26:48.406152387Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"04ba2fe1-c5c7-4b2d-8783-5c8abca2ba4b","messageId":"bd309271-98d5-41e8-811c-c6af85e1af5c","topic":"news","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":3}
+{"time":"2026-10-25T10:26:48.413388867Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"0d678944-1bbe-47eb-9c41-57fcd71b52b2","messageId":"4fe30b2e-0698-4ad1-b6d0-a0e3897b13dd","topic":"news","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":3}
+{"time":"2026-10-25T10:26:48.419847319Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"6ca7cf1e-2598-472b-912d-7f3291f07434","messageId":"660a743e-c5b0-4072-be2c-a7daa03b2bf8","topic":"news","subscribers":1,"duplicate":false,"attempt":1,"duration_ms":3}
+-- dlq: cele mai vechi 2 nu sunt șterse, ci mutate în DLQ
+DLQ: 2 mesaje
+2026-10-25T10:26:48Z  queue_overflow    receiver-3    148e9a09-db85-4de0-88e9-e7256e385646  news: dlq 1
+2026-10-25T10:26:48Z  queue_overflow    receiver-3    bd309271-98d5-41e8-811c-c6af85e1af5c  news: dlq 2
+-- kill -9 pe broker, repornire: DLQ e refăcută din jurnal
+DLQ: 2 mesaje
+2026-10-25T10:26:48Z  queue_overflow    receiver-3    148e9a09-db85-4de0-88e9-e7256e385646  news: dlq 1
+2026-10-25T10:26:48Z  queue_overflow    receiver-3    bd309271-98d5-41e8-811c-c6af85e1af5c  news: dlq 2
+-- redrive: mesajele din DLQ revin în coada lui receiver-3 (online) și sunt livrate
+retrimise în coada lui receiver-3: 2 (rămase în DLQ, topic neabonat: 0)
+DLQ: 0 mesaje
+### 11. TLS + token: un broker separat pe 127.0.0.1:50062
 -- cu CA și token corect:
-{"time":"2026-10-25T10:06:23.835867851Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"0c0e69b2-49f0-4bc0-b8ba-92945da35e7b","messageId":"316b599a-ace4-4219-a1e8-989e7a101858","topic":"news","subscribers":0,"duplicate":false,"attempt":1,"duration_ms":3}
+{"time":"2026-10-25T10:26:50.106760696Z","level":"INFO","msg":"publicare confirmată","component":"sender","event":"publish","result":"ack","correlationId":"8012412f-875e-43b2-a526-c6397767d8ad","messageId":"09b32b6a-4eee-4832-936e-2b39d25ad026","topic":"news","subscribers":0,"duplicate":false,"attempt":1,"duration_ms":2}
 -- fără token:
-{"time":"2026-10-25T10:06:23.842108478Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"Unauthenticated","correlationId":"86a772ce-463c-4a0a-a540-db085cf8691a","messageId":"963865fe-bfac-48f2-907f-d65935d51077","error":"token lipsă sau greșit","attempt":1,"duration_ms":2}
+{"time":"2026-10-25T10:26:50.112427991Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"Unauthenticated","correlationId":"f0433294-5744-4aa2-8d6c-d8811cdcdd55","messageId":"70a4d19f-5e81-44f8-ba83-42ea4f3699ae","error":"token lipsă sau greșit","attempt":1,"duration_ms":2}
 -- fără TLS:
-{"time":"2026-10-25T10:06:24.845312593Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"Unavailable","correlationId":"c30c8b2f-91ac-40c9-9264-d2be1a687d20","messageId":"56f333f5-9a0e-416b-9078-ac00451c275a","error":"brokerul nu răspunde în 1s (conexiune TRANSIENT_FAILURE)","attempt":1,"duration_ms":1000}
-### 11. brokerul se oprește (SIGTERM): receiverele reîncearcă de 3 ori, apoi renunță
+{"time":"2026-10-25T10:26:51.115479164Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"Unavailable","correlationId":"9ced16e3-d857-483f-93cd-ec4d72117f54","messageId":"50a915cf-8a45-43a0-8638-67ee1cda32ae","error":"brokerul nu răspunde în 1s (conexiune TRANSIENT_FAILURE)","attempt":1,"duration_ms":1000}
+### 12. brokerul se oprește (SIGTERM): receiverele reîncearcă de 3 ori, apoi renunță
 receiver-1 s-a oprit cu codul 1
-{"time":"2026-10-25T10:06:28.560011126Z","level":"WARN","msg":"publicare eșuată, reîncerc cu același messageId","component":"sender","event":"publish","result":"retry","code":"Unavailable","correlationId":"313aad50-7127-4d32-8c3c-89512231fedf","messageId":"4361e6cb-ceb6-4016-b354-3ba8f0ba5fb9","attempt":1,"max":1,"in":"200ms"}
-{"time":"2026-10-25T10:06:29.260822147Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"Unavailable","correlationId":"313aad50-7127-4d32-8c3c-89512231fedf","messageId":"4361e6cb-ceb6-4016-b354-3ba8f0ba5fb9","error":"brokerul nu răspunde în 500ms (conexiune TRANSIENT_FAILURE)","attempt":2,"duration_ms":500}
+{"time":"2026-10-25T10:26:54.829976061Z","level":"WARN","msg":"publicare eșuată, reîncerc cu același messageId","component":"sender","event":"publish","result":"retry","code":"Unavailable","correlationId":"94535aa6-a2cb-4b5c-8df3-ce042a219b25","messageId":"31ba3e87-df67-4c74-84dd-9b872dceea33","attempt":1,"max":1,"in":"200ms"}
+{"time":"2026-10-25T10:26:55.53085143Z","level":"WARN","msg":"publicare eșuată","component":"sender","event":"publish","result":"error","code":"Unavailable","correlationId":"94535aa6-a2cb-4b5c-8df3-ce042a219b25","messageId":"31ba3e87-df67-4c74-84dd-9b872dceea33","error":"brokerul nu răspunde în 500ms (conexiune TRANSIENT_FAILURE)","attempt":2,"duration_ms":500}
